@@ -24,7 +24,7 @@ namespace Net
         private static Socket clientSocket;
         //是否已连接的标识
         public bool IsConnected = false;
-        //public static List<string> swcList = new List<string>();
+        public List<string> swcList = new List<string>();
 
         public ClientSocket()
         {
@@ -58,7 +58,8 @@ namespace Net
 
         public void RequestLoop()
         {
-            while (IsConnected)
+            bool GotInfo = false;
+            while (IsConnected&&!GotInfo)
             {
                 //string data = "";
                 //SendMessage(data);
@@ -73,13 +74,15 @@ namespace Net
                     {
                         case CommandType.FileListShow:
                             //Debug.Log("fileListShow");
-                            
+                           
+
                             for(int i = 0; i < ca.fileList.Length; ++i)
                             {
-                                //swcList.Add(ca.fileList[i]);
-                                Debug.Log(ca.fileList[i]);
+                                swcList.Add(ca.fileList[i]);
+                                //Debug.Log(ca.fileList[i]);
                                 
                             }
+                            GotInfo = true;
                             break;
                         default:
                             Debug.Log("Nothing happened!");
