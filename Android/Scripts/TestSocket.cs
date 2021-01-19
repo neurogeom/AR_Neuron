@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Net;
@@ -15,7 +15,8 @@ Created by BlackFJ
 public class TestSocket : MonoBehaviour
 {
     public ClientSocket mSocket = new ClientSocket();
-    public static List<string> swcList = new List<string>();
+    public List<string> swcList;
+    
 
     private void Start()
     {
@@ -31,16 +32,45 @@ public class TestSocket : MonoBehaviour
 
     private void ButtonClick()
     {
-        mSocket.ConnectServer("192.168.1.2", 8088);
-        mSocket.SendMessage("ConnectionMobilePhone:192.168.1.2:1234");
+        mSocket.ConnectServer("192.168.1.144", 8088);
+        mSocket.SendMessage("ConnectionMobilePhone:192.168.1.144:1234");
         ThreadStart ts = new ThreadStart(ThreadWorkLoop);
         Thread tr = new Thread(ts);
         tr.Start();
+        bool createdButton = false;
+        while (true&&!createdButton)
+        {
+            if (swcList.Count > 0)
+            {
+                GameObject canvas = GameObject.Find("Canvas");
+                for (int i = 0; i < swcList.Count; ++i)
+                {
+                    string swcSelected = swcList[i];
+                    GameObject button = new GameObject("Button" + i.ToString(),
+                        typeof(Button), typeof(RectTransform), typeof(Image));
+                    button.transform.SetParent(canvas.transform);
+                    button.transform.localPosition = new Vector3(i * 105 + 70, 100, 0);
+                    button.GetComponent<Button>().onClick.AddListener(()=>ButtonClickForSelection(swcSelected));
+                }
+                createdButton = true;
+            }
+            
+        }
     }
-
+    private void ButtonClickForSelection(string swcSelected)
+    {
+        mSocket.SendMessage("FileSelection:" + swcSelected);
+    }
     public void ThreadWorkLoop()
     {
-        mSocket.RequestLoop();
+        //mSocket.RequestLoop();
+        
+        while (true)
+        {
+            mSocket.RequestLoop();
+            swcList = mSocket.swcList;
+        }
+        
         /*while (mSocket.IsConnected)
         {
             //string data = "";
@@ -76,7 +106,7 @@ public class TestSocket : MonoBehaviour
         }*/
     }
 
-    public void AddSelectionButton(List<string> swcFile)
+    /*public void AddSelectionButton(List<string> swcFile)
     {
         if (swcFile.Count == 0) return;
         GameObject canvas = GameObject.Find("Canvas");
@@ -86,7 +116,7 @@ public class TestSocket : MonoBehaviour
                 typeof(Button), typeof(RectTransform), typeof(Image));
             button.transform.SetParent(canvas.transform);
         }
-    }
+    }*/
 
     /*private void Update()
     {
