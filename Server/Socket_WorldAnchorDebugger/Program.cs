@@ -2,15 +2,17 @@
 using System.Net.Sockets;
 using System.Net;
 using System.Collections.Generic;
+
 namespace socket_worldAnchor_debugger
 {
     class Program
     {
         private static byte[] result = new byte[1024 * 1024];
-        //private static List<byte[]> bytesList = new List<byte[]>();
+        private static List<byte[]> bytesList = new List<byte[]>();
         private static string ipStr = "192.168.1.2";
         private const int port = 8088;
-        private static Socket clientSocket;
+        private static Socket clientSocket_send=null;
+        private static Socket clientSocket_receive=null;
         private static Socket serverSocket;
         public static int numAcception = 0;
         public static float totalMB = 0;
@@ -42,33 +44,61 @@ namespace socket_worldAnchor_debugger
             {
                 return;
             }
-            clientSocket=socket;
+            if (clientSocket_receive != null)
+            {
+                clientSocket_send = socket;
+            }
+            else
+            {
+                clientSocket_receive = socket;
+            }
             socket.BeginReceive(result, 0, 1024 * 1024, SocketFlags.None, ReceiveCallback, socket);
-            Console.WriteLine("Client Connected!");
+            Console.WriteLine("Client Connected!"); 
+            serverSocket.BeginAccept(AcceptCallback, null);
         }
 
         private static void ReceiveCallback(IAsyncResult AR)
         {
             Socket current = (Socket)AR.AsyncState;
-            int received;
-            try
+            if (current == clientSocket_send)
             {
-                received = current.EndReceive(AR);
-            }
-            catch
-            {
-                Console.WriteLine("Client Disconnected!");
-                current.Close();
-                return;
-            }
-            byte[] recBuffer = new byte[received];
-            Array.Copy(result, recBuffer, received);
-            //string text = Encoding.ASCII.GetString(recBuffer);
-            //string text=BitConverter.ToString(recBuffer);
+                int received;
+                try
+                {
+                    received = current.EndReceive(AR);
+                }
+                catch
+                {
+                    Console.WriteLine("Client Disconnected!");
+                    current.Close();
+                    return;
+                }
+                byte[] recBuffer = new byte[received];
+                Array.Copy(result, recBuffer, received);
+                if (clientSocket_receive != null)
+                {
+                    clientSocket_receive.Send(result);
+                    Console.WriteLine("Send {0}th piece of byteStream data to another holoLens.");
+                }
+                bytesList.Add(recBuffer);
+                //string text = Encoding.ASCII.GetString(recBuffer);
+                //string text=BitConverter.ToString(recBuffer);
 
-            totalMB += received * 1.0f / 1024.0f / 1024.0f;
-            Console.WriteLine("{0}: {1}MB", numAcception, totalMB);
-            numAcception++;
+                totalMB += received * 1.0f / 1024.0f / 1024.0f;
+                Console.WriteLine("{0}: {1}MB", numAcception, totalMB);
+                numAcception++;
+            }
+            /*else if(current==clientSocket_receive)
+            {
+                if (bytesList.Count > 0)
+                {
+                    for (int i = 0; i < bytesList.Count; ++i)
+                    {
+                        current.Send(bytesList[i]);
+                        Console.WriteLine("Send {0}th piece of byteStream data to holoLens.");
+                    }
+                }
+            }*/
             current.BeginReceive(result, 0, 1024 * 1024, SocketFlags.None, ReceiveCallback, current);
         }
     }
