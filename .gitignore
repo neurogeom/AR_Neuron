@@ -1,0 +1,21 @@
+AR/Library
+AR/Logs
+AR/obj
+AR/Packages
+AR/Assets/Plugins
+AR/Assets/Textures
+AR/Assets/MixedRealityToolkit.Generated
+AR/Assets/MRTK
+AR/Assets/NuGet
+AR/Assets/XR
+AR/Assets/Packages
+AR/Assets/TextMesh Pro
+AR/ProjectSettings
+AR/UserSettings
+*.meta
+AR/.vs
+*.vsconfig
+*.config
+*.csproj
+*.sln
+*htm
