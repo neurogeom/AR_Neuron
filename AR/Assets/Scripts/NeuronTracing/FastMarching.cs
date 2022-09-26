@@ -10,6 +10,7 @@ using UnityEditor;
 
 public class FastMarching : MonoBehaviour
 {
+    static int sz0, sz1, sz2,sz01;
     static Texture3D SDF;
     static double max_intensity;
     static double min_intensity;
@@ -17,6 +18,7 @@ public class FastMarching : MonoBehaviour
     static float[] phi;
     static int[] parent;
     static int[] parent_oc;
+    static List<int>[] children_oc;
     static States[] state;
     static HeapElemX[] elems;
     enum States { ALIVE = -1, TRIAL = 0, FAR = 1, REPAIRED = 2 };
@@ -731,7 +733,8 @@ public class FastMarching : MonoBehaviour
         state[root_index] = States.ALIVE;
         phi[root_index] = 0;
 
-        HashSet<int> target_set = new HashSet<int>();
+        SortedSet<int> target_set = new SortedSet<int>(new TargetComparer(sz0,sz1,sz2,root));
+
         for (int i = 0; i < targets.Length; i++)
         {
             if (targets[i] != root_index) target_set.Add(targets[i]);
@@ -848,19 +851,8 @@ public class FastMarching : MonoBehaviour
         while (target_set.Count > 0)
         {
             float min_dis = float.MaxValue;
-            int target_index = target_set.First();
-            foreach (var t_index in target_set)
-            {
-                int x = (int)(t_index % sz0);
-                int y = (int)((t_index / sz0) % sz1);
-                int z = (int)((t_index / sz01) % sz2);
-                float distance_toseed = Vector3.Distance(new Vector3(x, y, z), root.position);
-                if (distance_toseed < min_dis)
-                {
-                    min_dis = distance_toseed;
-                    target_index = t_index;
-                }
-            }
+            int target_index = target_set.Last();
+
             //int target_index = target_set.First();
             target_set.Remove(target_index);
             HashSet<Vector3> voxelSet = findSubVoxels(target_index, gsdt, searchSet, results, sz0, sz1, sz2, bkg_thresh);
@@ -941,13 +933,13 @@ public class FastMarching : MonoBehaviour
 
             HashSet<int> trunk = new HashSet<int>();
             //计算第一个方向
-            SearchCluster(maximum_pos, direction, 25, sz0, sz1, sz2, gsdt,phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
+            SearchCluster(maximum_pos, direction, 25, gsdt,phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
 
             //计算另一个方向
-            SearchCluster(minimum_pos, -direction, 25, sz0, sz1, sz2, gsdt,phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
+            SearchCluster(minimum_pos, -direction, 25, gsdt,phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
             
             (direction,maximum_pos,minimum_pos) = ParentDir(voxelSet, sz01, sz0, new Vector3Int(sz0,sz1,sz2), new Vector3Int(o_width,o_height,o_depth));
-            SearchCluster(maximum_pos, direction, 25, sz0, sz1, sz2, gsdt, phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
+            SearchCluster(maximum_pos, direction, 25, gsdt, phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
 
             ////计算另一个方向
             //SearchCluster(minimum_pos, -direction, 25, sz0, sz1, sz2, gsdt, phi, searchSet, results,  trunk, target_set, heap, elems, connection, bkg_thresh);
@@ -1135,6 +1127,7 @@ public class FastMarching : MonoBehaviour
         double[] gsdt = new double[tol_sz];
         double[] phi = new double[tol_sz];
         parent_oc = new int[tol_sz];
+        children_oc = new List<int>[tol_sz];
         state = new States[tol_sz];
 
         img.CopyTo(gsdt, 0);
@@ -1182,6 +1175,8 @@ public class FastMarching : MonoBehaviour
             int min_index = min_elem.img_index;
 
             parent_oc[min_index] = min_elem.prev_index;
+            if (children_oc[min_elem.prev_index] == null) children_oc[min_elem.prev_index] = new List<int>();
+            children_oc[min_elem.prev_index].Add(min_index);
 
             state[min_index] = States.ALIVE;
 
@@ -1685,32 +1680,53 @@ public class FastMarching : MonoBehaviour
     //    Debug.Log("repair done");
     //    return outTree;
     //}
+    public class TargetComparer : IComparer<int>
+    {
+        int sz0, sz1, sz2, sz01;
+        Marker root;
+        public TargetComparer(int _sz0, int _sz1, int _sz2, Marker _root)
+        {
+            sz0 = _sz0;
+            sz1 = _sz1;
+            sz2 = _sz2;
+            root = _root;
+            sz01 = sz0 * sz1;
+        }
+        public int Compare(int index1, int index2)
+        {
+            int x = (int)(index1 % sz0);
+            int y = (int)((index1 / sz0) % sz1);
+            int z = (int)((index1 / sz01) % sz2);
+            float distance_toseed_1 = Vector3.Distance(new Vector3(x, y, z), root.position);
 
-    public static void TraceTarget(ref List<Marker> outTree, Marker root, int targetIndex,int sz0,int sz1,int sz2, int o_width,int o_height, int o_depth, int cnn_type = 3, int bkg_thresh = 30, bool is_break_accept = false)
-    { 
-        int sz01 = sz0 * sz1;
-        HashSet<int> target_set = new HashSet<int>();
+            x = (int)(index1 % sz0);
+            y = (int)((index1 / sz0) % sz1);
+            z = (int)((index1 / sz01) % sz2);
+            float distance_toseed_2 = Vector3.Distance(new Vector3(x, y, z), root.position);
+            if (distance_toseed_1 < distance_toseed_2) return -1;
+            else if (distance_toseed_1 == distance_toseed_2) return 0;
+            else return 1;
+        }
+    }
+
+    public static void TraceTarget(ref List<Marker> outTree, Marker root, int targetIndex,int _sz0,int _sz1,int _sz2, int o_width,int o_height, int o_depth, int cnn_type = 3, int bkg_thresh = 30, bool is_break_accept = false)
+    {
+        //if (results.Contains(targetIndex)) return;
+        (sz0, sz1, sz2) = (_sz0, _sz1, _sz2);
+        sz01 = sz0 * sz1;
+        SortedSet<int> target_set = new SortedSet<int>(new TargetComparer(sz0,sz1,sz2,root));
         HashSet<int> searchSet = new HashSet<int>();
         Heap<HeapElemX> heap = new Heap<HeapElemX>();
         Dictionary<int, int> connection = new Dictionary<int, int>();
         Dictionary<int, HeapElemX> elems = new Dictionary<int, HeapElemX>();
+
         target_set.Add(targetIndex);
         while (target_set.Count > 0)
         {
             float min_dis = float.MaxValue;
-            int target_index = target_set.First();
-            foreach (var t_index in target_set)
-            {
-                int x = (int)(t_index % sz0);
-                int y = (int)((t_index / sz0) % sz1);
-                int z = (int)((t_index / sz01) % sz2);
-                float distance_toseed = Vector3.Distance(new Vector3(x, y, z), root.position);
-                if (distance_toseed < min_dis)
-                {
-                    min_dis = distance_toseed;
-                    target_index = t_index;
-                }
-            }
+
+            int target_index = target_set.Last();
+
             //int target_index = target_set.First();
             target_set.Remove(target_index);
             HashSet<Vector3> voxelSet = findSubVoxels(target_index, gsdt, searchSet, results, sz0, sz1, sz2, bkg_thresh);
@@ -1726,25 +1742,27 @@ public class FastMarching : MonoBehaviour
             int serachLength = 20;
 
             HashSet<int> trunk = new HashSet<int>();
-            //计算第一个方向
-            SearchCluster(maximum_pos, direction, 25, sz0, sz1, sz2, gsdt, phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
+            ////计算第一个方向
+            //SearchCluster(maximum_pos, direction, 25, gsdt, phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
 
-            //计算另一个方向
-            SearchCluster(minimum_pos, -direction, 25, sz0, sz1, sz2, gsdt, phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
+            ////计算另一个方向
+            //SearchCluster(minimum_pos, -direction, 25, gsdt, phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
 
-            (direction, maximum_pos, minimum_pos) = ParentDir(voxelSet, sz01, sz0, new Vector3Int(sz0, sz1, sz2), new Vector3Int(o_width, o_height, o_depth));
-            SearchCluster(maximum_pos, direction, 25, sz0, sz1, sz2, gsdt, phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
+            //(direction, maximum_pos, minimum_pos) = ParentDir(voxelSet, sz01, sz0, new Vector3Int(sz0, sz1, sz2), new Vector3Int(o_width, o_height, o_depth));
+            //SearchCluster(maximum_pos, direction, 25, sz0, sz1, sz2, gsdt, phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
 
             ////计算另一个方向
             //SearchCluster(minimum_pos, -direction, 25, sz0, sz1, sz2, gsdt, phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
 
+            SearchCluster(voxelSet,root, new Vector3Int(sz0, sz1, sz2), new Vector3Int(o_width, o_height, o_depth), searchSet, results, target_set, heap, elems, connection, bkg_thresh);
         }
 
         Debug.Log("==========done" + heap.elems.Count);
 
         foreach(var elem in heap.elems)
         {
-            Debug.Log(elem.img_index);
+            Debug.Log(IndexToVector(elem.img_index));
+            createSphere(IndexToVector(elem.img_index), new Vector3Int(sz0, sz1, sz2), Color.yellow);
         }
 
         HashSet<int> addResults = new HashSet<int>();
@@ -2056,7 +2074,8 @@ public class FastMarching : MonoBehaviour
         return (direction, maximum_pos, minimum_pos);
     }
 
-    private static void SearchCluster(Vector3 baseVoxel, Vector3 direction, int searchLength, int sz0, int sz1, int sz2, float[] gsdt, float[] phi, HashSet<int> searchSet, HashSet<int> results, HashSet<int> trunk, HashSet<int> target_set, Heap<HeapElemX> heap, Dictionary<int, HeapElemX> elems, Dictionary<int, int> connection, int bkg_thresh)
+    //pca
+    private static void SearchCluster(Vector3 baseVoxel, Vector3 direction, int searchLength, float[] gsdt, float[] phi, HashSet<int> searchSet, HashSet<int> results, HashSet<int> trunk, SortedSet<int> target_set, Heap<HeapElemX> heap, Dictionary<int, HeapElemX> elems, Dictionary<int, int> connection, int bkg_thresh)
     {
         Vector3 a = Vector3.Cross(Vector3.forward, direction);
         if (a == Vector3.zero)
@@ -2072,13 +2091,7 @@ public class FastMarching : MonoBehaviour
         {
             circleCenter += direction;
             int radius = (int)Math.Round(length * Math.Tan(Math.PI / 6));
-            //GameObject circle = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            //circle.GetComponent<MeshRenderer>().material.color = new Color(1, 0, 0, 0.5f);
-            //var trans = GameObject.Find("PaintingBoard").transform;
-            //Vector3 pos = circleCenter / 512.0f - new Vector3(0.5f, 0.5f, 0.5f);
-            //circle.transform.position = trans.TransformPoint(pos);
-            //circle.transform.localScale = new Vector3(radius*2 / (float)sz0, 0.0001f, radius*2 / (float)sz2);
-            //circle.transform.up = trans.TransformDirection(direction);
+
             for (int r = 1; r <= radius && !is_break; r++)
             {
                 for (float theta = 0; theta < 2 * Mathf.PI; theta += Mathf.PI / 36)
@@ -2160,6 +2173,7 @@ public class FastMarching : MonoBehaviour
         int parent_index_oc = parent_oc[index_oc];
         int pp_index_oc = parent_oc[parent_index_oc];
         //Debug.Log(index_oc + " " + parent_index_oc + " " + pp_index_oc);
+        
         Vector3 parent_pos = new Vector3(parent_index_oc % o_width, (parent_index_oc / o_width) % o_height, (parent_index_oc / o_width / o_height) % o_depth);
         Vector3 pparent_pos = new Vector3(pp_index_oc % o_width, (pp_index_oc / o_width) % o_height, (pp_index_oc / o_width / o_height) % o_depth);
 
@@ -2207,6 +2221,141 @@ public class FastMarching : MonoBehaviour
         int maximum_index = (int)(maximum_pos.z * sz01 + maximum_pos.y * sz0 + maximum_pos.x);
         int minimum_index = (int)(minimum_pos.z * sz01 + minimum_pos.y * sz0 + minimum_pos.x);
         return (direction2, maximum_pos, minimum_pos);
+    }
+
+    private static void SearchCluster(HashSet<Vector3> voxelSet, Marker root, Vector3Int vDim, Vector3Int oDim, HashSet<int> searchSet, HashSet<int> results, SortedSet<int> target_set, Heap<HeapElemX> heap, Dictionary<int, HeapElemX> elems, Dictionary<int, int> connection, int bkg_thresh)
+    {
+        int blockSize = 4;
+        Vector3 baseVoxel = Vector3.zero;
+        float minDistance = float.MaxValue;
+        foreach (var voxel in voxelSet)
+        {
+            //createSphere(voxel, new Vector3Int(2048, 2048, 140), Color.green,0.005f);
+            float distance_toseed= Vector3.Distance(voxel, root.position);
+            if(distance_toseed < minDistance)
+            {
+                minDistance = distance_toseed;
+                baseVoxel = voxel;
+            }
+        }
+        int baseIndex = VectorToIndex(baseVoxel);
+        //Debug.Log(baseVoxel);
+        Vector3 occupancyBaseVoxel = Vector3.zero;
+        createSphere(baseVoxel, vDim, Color.yellow);
+        occupancyBaseVoxel.x = baseVoxel.x / vDim.x * oDim.x;
+        occupancyBaseVoxel.y = baseVoxel.y / vDim.y * oDim.y;
+        occupancyBaseVoxel.z = baseVoxel.z / vDim.z * oDim.z;
+        //Debug.Log(occupancyBaseVoxel);
+        createSphere(occupancyBaseVoxel, oDim, Color.blue);
+        int index_oc = ((int)occupancyBaseVoxel.x + (int)occupancyBaseVoxel.y * oDim.x + (int)occupancyBaseVoxel.z * oDim.y * oDim.x);
+
+        int parentOccupancyIndex = parent_oc[index_oc];
+        Vector3 parentOccupancyPos = IndexToVector(parentOccupancyIndex, oDim);
+        Vector3 parentBasePos = Vector3Int.zero;
+        parentBasePos.x = (int)(parentOccupancyPos.x /oDim.x * vDim.x);
+        parentBasePos.y = (int)(parentOccupancyPos.y /oDim.y * vDim.y);
+        parentBasePos.z = (int)(parentOccupancyPos.z /oDim.z * vDim.z);
+        int searchTimes = 0;
+        bool is_break = false;
+        while (searchTimes < 15 && !is_break)
+        {
+            for(int i = 0; i < blockSize && !is_break; i++)
+            {
+                for(int j=0; j < blockSize && !is_break; j++)
+                {
+                    for (int k = 0; k < blockSize && !is_break; k++)
+                    {
+                        Vector3 tmp = parentBasePos + new Vector3Int(i, j, k);
+                        if (tmp.x >= 0 && tmp.x < sz0 && tmp.y >= 0 && tmp.y < sz1 && tmp.z >= 0 && tmp.z < sz2)
+                        {
+                            int tmpIndex = VectorToIndex(tmp);
+                            if (gsdt[tmpIndex] >= bkg_thresh)
+                            {
+                                if (results.Contains(tmpIndex))
+                                {
+                                    Debug.Log("find main construction");
+                                        double factor = Vector3.Distance(tmp, baseVoxel);
+                                        float new_dist = (float)(phi[tmpIndex] + (GI(gsdt[tmpIndex]) + GI(gsdt[baseIndex])) * factor * 0.5);
+                                        phi[baseIndex] = new_dist;
+                                        HeapElemX elem = new HeapElemX(baseIndex, phi[baseIndex]);
+                                        elem.prev_index = tmpIndex;
+                                        heap.insert(elem);
+                                        elems[baseIndex] = elem;
+                                        //state[maximum_index] = States.TRIAL;
+
+                                    is_break = true;
+                                    break;
+                                }
+                                else if (searchSet.Contains(tmpIndex))
+                                {
+                                    connection[baseIndex] = tmpIndex;
+                                    connection[tmpIndex] = baseIndex;
+                                }
+                                else
+                                {
+                                    //var tmpVoxels = findSubVoxels(tmp_index, results, sz0, sz1, sz2);
+                                    //if (tmpVoxels.Count < 10) continue;
+                                    target_set.Add(tmpIndex);
+                                    connection[baseIndex] = tmpIndex;
+                                    connection[tmpIndex] = baseIndex;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (is_break) break;
+            searchTimes++;
+            parentOccupancyIndex = parent_oc[parentOccupancyIndex];
+            parentOccupancyPos = IndexToVector(parentOccupancyIndex, oDim);
+            parentBasePos.x = (int)(parentOccupancyPos.x / oDim.x * vDim.x);
+            parentBasePos.y = (int)(parentOccupancyPos.y / oDim.y * vDim.y);
+            parentBasePos.z = (int)(parentOccupancyPos.z / oDim.z * vDim.z);
+            createSphere(parentBasePos, vDim, Color.red);
+            //Debug.Log(occupancyBaseVoxel);
+        }
+
+
+    }
+
+    private static void createSphere(Vector3 pos, Vector3Int Dim,Color color, float scale = 0.01f)
+    {
+        (int width, int height, int depth) = (Dim.x, Dim.y, Dim.z);
+        Vector3 position = new Vector3(pos.x / width, pos.y / height, pos.z / depth) - new Vector3(0.5f, 0.5f, 0.5f);
+        var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        var trans = GameObject.Find("Cube").transform;
+        sphere.transform.position = trans.TransformPoint(position);
+        sphere.transform.localScale = new Vector3(scale, scale, scale);
+        sphere.transform.parent = GameObject.Find("SerachPoints").transform;
+        sphere.GetComponent<MeshRenderer>().material.color = color;
+    }
+
+    private static Vector3Int IndexToVector(int index)
+    {
+        int x = (int)(index % sz0);
+        int y = (int)((index / sz0) % sz1);
+        int z = (int)((index / sz01) % sz2);
+        return new Vector3Int(x, y, z);
+    }
+
+    private static Vector3 IndexToVector(int index, Vector3Int dim)
+    {
+        int x = (int)(index % dim.x);
+        int y = (int)((index / dim.x) % dim.y);
+        int z = (int)((index / dim.x / dim.y) % dim.y);
+        return new Vector3(x, y, z);
+    }
+
+    private static int VectorToIndex(Vector3 pos)
+    {
+        int index = ((int)pos.x + (int)pos.y * sz0 + (int)pos.z * sz0 * sz1);
+        return index;
+    }
+
+    private static int VectorToIndex(Vector3 pos, Vector3Int dim)
+    {
+        int index = ((int)pos.x + (int)pos.y * dim.x + (int)pos.z * dim.x * dim.y);
+        return index;
     }
 }
 

@@ -204,6 +204,7 @@ MonoBehaviour:
   Dimensions: {x: 512, y: 512, z: 512}
   Volume: {fileID: 0}
   OccupancyMap: {fileID: 0}
+  bkgThreshold: 15
 --- !u!4 &85664457
 Transform:
   m_ObjectHideFlags: 0
@@ -1660,6 +1661,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bdbaf0cd8aeda8e408c45b6d563da0d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isMsfm: 1
+  bkg_thresh: 15
   volume: {fileID: 11700000, guid: c2bd6a418d0eaef48b9a34d70781ef03, type: 2}
   seed: {fileID: 1499450323}
   cube: {fileID: 96922833}

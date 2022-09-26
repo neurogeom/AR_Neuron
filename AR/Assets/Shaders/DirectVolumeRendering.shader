@@ -2,7 +2,6 @@ Shader "Unlit/NewUnlitShader"
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
         _VolumeScale("VolumeScale", Vector) = (1,1,1,1)
         _Volume("Volume", 3D) = "white" {}
     }

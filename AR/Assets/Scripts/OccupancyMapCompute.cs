@@ -5,12 +5,14 @@ using UnityEngine;
 
 public class OccupancyMapCompute : MonoBehaviour
 {
-    [SerializeReference] public ComputeShader occupancyCompute;
-    [SerializeReference] public ComputeShader distanceCompute;
-    [SerializeReference] public int BlockSize;
-    [SerializeReference] public Vector3Int Dimensions;
-    [SerializeReference] public Texture3D Volume;
-    [SerializeReference] public Texture3D OccupancyMap;
+    public ComputeShader occupancyCompute;
+    public ComputeShader distanceCompute;
+    public int BlockSize;
+    public Vector3Int Dimensions;
+    public Texture3D Volume;
+    public Texture3D OccupancyMap;
+    public int bkgThreshold;
+    
     private RenderTexture resultTexture;
     private RenderTexture dist_swap;
     private Vector3Int Dmap;
@@ -77,6 +79,7 @@ public class OccupancyMapCompute : MonoBehaviour
         occupancyCompute.SetInt("BlockSize", BlockSize);
         occupancyCompute.SetFloats("Dimensions", Dimensions.x, Dimensions.y, Dimensions.z);
         occupancyCompute.SetTexture(kernelKey, "Volume", Volume);
+        occupancyCompute.SetInt("bkgThreshold", bkgThreshold);
 
         resultTexture = new RenderTexture(Dmap.x, Dmap.y, 0, RenderTextureFormat.R8);
         resultTexture.dimension = UnityEngine.Rendering.TextureDimension.Tex3D;

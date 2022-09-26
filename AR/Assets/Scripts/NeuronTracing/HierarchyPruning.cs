@@ -242,7 +242,7 @@ public class HierarchyPrune
 
         float somaR = Marker.markerRadius(img, sz0, sz1, sz2, root, real_thresh);
         Debug.Log(somaR);
-        somaR = 50;
+        somaR *= 2;
 
         foreach (HierarchySegment topo_seg in topo_segs)
         {
