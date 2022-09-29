@@ -5,10 +5,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 using MathNet.Numerics.LinearAlgebra.Double;
-using Numpy;
 using UnityEditor;
 
-public class FastMarching : MonoBehaviour
+public class FastMarching
 {
     int sz0, sz1, sz2, sz01;
     Texture3D SDF;
@@ -225,7 +224,7 @@ public class FastMarching : MonoBehaviour
         Heap<HeapElem> heap = new Heap<HeapElem>();
         ConcurrentDictionary<int, HeapElem> elems = new ConcurrentDictionary<int, HeapElem>();
         ConcurrentBag<HeapElem> concurrentBag = new ConcurrentBag<HeapElem>();
-
+        
         Parallel.For(0, sz0, i =>
         {
             for (int j = 0; j < sz1; j++)
@@ -1665,12 +1664,12 @@ public class FastMarching : MonoBehaviour
         if (Vector3.Dot(direction, parentDirection) < 0) direction = -direction;
         Vector3 position = new Vector3(average.x / sz0, average.y / sz1, average.z / sz2) - new Vector3(0.5f, 0.5f, 0.5f);
         //Debug.Log(direction + " " + position);
-        var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        var trans = GameObject.Find("Cube").transform;
-        sphere.transform.position = trans.TransformPoint(position);
-        sphere.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
-        sphere.transform.parent = GameObject.Find("SerachPoints").transform;
-        Debug.DrawLine(sphere.transform.position, sphere.transform.position + trans.TransformDirection(direction) * 0.25f, Color.yellow, 1000);
+        //var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        //var trans = GameObject.Find("Cube").transform;
+        //sphere.transform.position = trans.TransformPoint(position);
+        //sphere.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
+        //sphere.transform.parent = GameObject.Find("SerachPoints").transform;
+        //Debug.DrawLine(sphere.transform.position, sphere.transform.position + trans.TransformDirection(direction) * 0.25f, Color.yellow, 1000);
 
         //计算点在主方向上一维投影坐标
         List<float> projections = new List<float>();
@@ -1788,14 +1787,14 @@ public class FastMarching : MonoBehaviour
         direction2 = (pparent_pos - average).normalized;
         Vector3 position = new Vector3(average.x / o_width, average.y / o_height, average.z / o_depth) - new Vector3(0.5f, 0.5f, 0.5f);
         //Debug.Log(direction + " " + position);
-        var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        var trans = GameObject.Find("Cube").transform;
-        sphere.transform.position = trans.TransformPoint(position);
-        sphere.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
-        sphere.transform.parent = GameObject.Find("SerachPoints").transform;
+        //var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        //var trans = GameObject.Find("Cube").transform;
+        //sphere.transform.position = trans.TransformPoint(position);
+        //sphere.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
+        //sphere.transform.parent = GameObject.Find("SerachPoints").transform;
 
-        Debug.DrawLine(sphere.transform.position, sphere.transform.position + trans.TransformDirection(direction) * 0.25f, Color.blue, 1000);
-        Debug.DrawLine(sphere.transform.position, sphere.transform.position + trans.TransformDirection(direction2) * 0.25f, Color.green, 1000);
+        //Debug.DrawLine(sphere.transform.position, sphere.transform.position + trans.TransformDirection(direction) * 0.25f, Color.blue, 1000);
+        //Debug.DrawLine(sphere.transform.position, sphere.transform.position + trans.TransformDirection(direction2) * 0.25f, Color.green, 1000);
 
         List<float> projections = new List<float>();
         foreach (var subVoxel in subVoxels)

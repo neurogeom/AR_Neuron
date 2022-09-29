@@ -152,7 +152,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83d9acc7968244a8886f3af591305bcb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  activeProfile: {fileID: 11400000, guid: 2245fce04de0ea34e9f3301d925d93cf, type: 2}
+  activeProfile: {fileID: 11400000, guid: 7fe76f1291634b14faae0e008b36faf1, type: 2}
 --- !u!4 &15795662
 Transform:
   m_ObjectHideFlags: 0
@@ -204,7 +204,7 @@ MonoBehaviour:
   Dimensions: {x: 512, y: 512, z: 512}
   Volume: {fileID: 0}
   OccupancyMap: {fileID: 0}
-  bkgThreshold: 15
+  bkgThreshold: 10
 --- !u!4 &85664457
 Transform:
   m_ObjectHideFlags: 0
@@ -1663,11 +1663,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   isMsfm: 1
   bkg_thresh: 10
-  volume: {fileID: 11700000, guid: c2bd6a418d0eaef48b9a34d70781ef03, type: 2}
+  volume: {fileID: 11700000, guid: 17e07913b87d0664984ed075d6d878da, type: 2}
   seed: {fileID: 1499450323}
   cube: {fileID: 96922833}
   PaintingBoard: {fileID: 532495643}
-  occupancy: {fileID: 11700000, guid: e2873273dfda1e845a30615b4dc21790, type: 2}
+  occupancy: {fileID: 11700000, guid: 4461f3f050ed191429df9abd6e9a9d14, type: 2}
 --- !u!4 &1897691022
 Transform:
   m_ObjectHideFlags: 0
@@ -1758,7 +1758,7 @@ MonoBehaviour:
   paintingBoard: {fileID: 96922833}
   bkgThresh: 10
   isRepairing: 0
-  volume: {fileID: 11700000, guid: c2bd6a418d0eaef48b9a34d70781ef03, type: 2}
+  volume: {fileID: 11700000, guid: 4461f3f050ed191429df9abd6e9a9d14, type: 2}
   app2: {fileID: 1897691021}
 --- !u!4 &1948615979
 Transform:
