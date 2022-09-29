@@ -120,8 +120,8 @@ public class IndexTipTrackScript : MonoBehaviour
         //RelationshipDict[0] = -1;
         IsContinuous = false;
         NumChosen = 0;
-        soma = (SwcSoma)GameObject.Find("Soma").GetComponent<Chosen>().nodeB;
-        SomaPosition = soma.position;
+        //soma = (SwcSoma)GameObject.Find("Soma").GetComponent<Chosen>().nodeB;
+        //SomaPosition = soma.position;
         //Chosen chosen= GameObject.Find("Soma").GetComponent<Chosen>();
         //chosen.Apos = soma;
         //chosen.Bpos = soma;

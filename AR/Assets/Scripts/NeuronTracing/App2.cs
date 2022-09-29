@@ -43,7 +43,11 @@ public class App2 : MonoBehaviour
     static Marker msfm_root;
     List<Marker> outTree;
 
+    FastMarching fm;
+
     static public int RepairTargetIndex;
+    static public Dictionary<Marker, Chosen> MarkerMap = new Dictionary<Marker, Chosen>(); 
+
     void Start()
     {
         (dims.x, dims.y, dims.z) = (volume.width, volume.height, volume.depth);
@@ -66,6 +70,7 @@ public class App2 : MonoBehaviour
 
         root = new Marker(rootPos);
         msfm_root = new Marker(rootPos / 4);
+        fm = new FastMarching();
 
         AllPathPruning2();
 
@@ -82,12 +87,12 @@ public class App2 : MonoBehaviour
         {
             //float time = Time.time;
 
-            gsdt = FastMarching.FastMarching_dt_parallel(img1d, volume.width, volume.height, volume.depth, 30);
+            gsdt = fm.FastMarching_dt_parallel(img1d, volume.width, volume.height, volume.depth, bkg_thresh);
 
             if (isMsfm)
             {
-                msfm = FastMarching.MSFM_dt_parallel(occupancyData, occupancy.width, occupancy.height, occupancy.depth, 30);
-                FastMarching.MSFM_tree(msfm_root, msfm, out outTree, occupancy.width, occupancy.height, occupancy.depth, 3, 30, false);
+                msfm = fm.MSFM_dt_parallel(occupancyData, occupancy.width, occupancy.height, occupancy.depth, bkg_thresh);
+                fm.MSFM_tree(msfm_root, msfm, occupancy.width, occupancy.height, occupancy.depth, 3, bkg_thresh, false);
             }
             //time = Time.time - time;
 
@@ -127,101 +132,122 @@ public class App2 : MonoBehaviour
             //FastMarching.MSFM_tree_boost(root, gsdt, out outTree, volume.width, volume.height, volume.depth, sdf, 3, 30, false);
 
             //FastMarching.FastMarching_tree(root, gsdt, out outTree, volume.width, volume.height, volume.depth, 3, 30, false);
-            FastMarching.FastMarching_tree(root, gsdt, out outTree, volume.width, volume.height, volume.depth, occupancy.width, occupancy.height, occupancy.depth, targets, 3, 30, true);
+            fm.FastMarching_tree(root, gsdt, out outTree, volume.width, volume.height, volume.depth, occupancy.width, occupancy.height, occupancy.depth, targets, 3, bkg_thresh, true);
             //time = Time.time - time;
             //Debug.Log("restruction done" + " time cost:" + time);
             Debug.Log(outTree.Count);
 
             filtered_tree = new List<Marker>();
-            HierarchyPrune.hierarchy_prune(outTree, out filtered_tree, img1d, volume.width, volume.height, volume.depth, 30, 15, true, SR_ratio);
+            HierarchyPrune.hierarchy_prune(outTree, out filtered_tree, img1d, volume.width, volume.height, volume.depth, bkg_thresh, 10, true, SR_ratio);
 
             //yield return new WaitForSeconds(2);
             Primitive.CreateTree(filtered_tree, cube.transform, volume.width, volume.height, volume.depth);
             //GameObject HandTrackingManager = GameObject.Find("HandTrackingManager");
             //HandTrackingManager.GetComponent<IndexTipTrackScript>().enabled = true;
+
+
         }
     }
 
     public void TraceTarget(int target_index)
     {
-        DestroyImmediate(GameObject.Find("Temp"));
-        GameObject temp = new GameObject("Temp");
-        temp.transform.position = Vector3.zero;
+        //DestroyImmediate(GameObject.Find("Temp"));
+        //GameObject temp = new GameObject("Temp");
+        //temp.transform.position = Vector3.zero;
         //Debug.Log(outTree.Count);
         //List<Marker> markers = new List<Marker>(outTree);
 
-        FastMarching.TraceTarget(ref outTree, root, target_index, volume.width, volume.height, volume.depth, occupancy.width, occupancy.height, occupancy.depth);
+        (Marker branchMarker, Marker branchParentMarker) = fm.TraceTarget(ref outTree, root, target_index, volume.width, volume.height, volume.depth, occupancy.width, occupancy.height, occupancy.depth,3,bkg_thresh);
+        Marker realBranchParentMarker = new Marker();
+        float minDistance = float.MaxValue;
+        Vector3 direction = (branchParentMarker.position - branchMarker.position).normalized;
+        foreach(Marker marker in filtered_tree)
+        {
+            if (Vector3.Dot((marker.position - branchMarker.position).normalized, direction) < 0.8) continue;
+            float dis = Vector3.Distance(marker.position, branchParentMarker.position);
+            if (dis < minDistance)
+            {
+                minDistance = dis;
+                realBranchParentMarker = marker;
+            }
+        }
 
-        filtered_tree = new List<Marker>();
-        HierarchyPrune.hierarchy_prune(outTree, out filtered_tree, img1d, volume.width, volume.height, volume.depth, 30, 15, true, SR_ratio);
-        Primitive.CreateTree(filtered_tree, cube.transform, volume.width, volume.height, volume.depth);
+        List<Marker> branch = new List<Marker>();
+        HierarchyPrune.hierarchy_prune_repair(outTree, out branch, img1d, volume.width, volume.height, volume.depth, bkg_thresh, 10, SR_ratio);
+
+
+        Primitive.CreateBranch(branch,realBranchParentMarker, cube.transform, volume.width, volume.height, volume.depth);
+        branchMarker.parent = realBranchParentMarker;
+        Debug.Log(filtered_tree.Count);
+        filtered_tree.AddRange(branch);
+        Debug.Log(filtered_tree.Count);
     }
 
     // Update is called once per frame
-    IEnumerator All_path_pruning2()
-    {
-        yield return new WaitForSeconds(1);
-        byte[] img1d = volume.GetPixelData<byte>(0).ToArray();
-        double[] gsdt;
-        //float[] gsdt = new float[volume.width * volume.height * volume.depth];
-        List<Marker> outTree;
-        if (is_gsdt)
-        {
-            float time = Time.realtimeSinceStartup;
-            //gsdt = FastMarching.FastMarching_dt_parallel(img1d, volume.width, volume.height, volume.depth, 30);
-            gsdt = FastMarching.MSFM_dt_parallel(img1d, volume.width, volume.height, volume.depth, 30);
-            time = Time.realtimeSinceStartup - time;
-            Debug.Log("gsdt parallel done" + " time cost:" + time);
-            yield return 0;
-            //time = Time.realtimeSinceStartup;
-            //gsdt = FastMarching.FastMarching_dt(img1d, volume.width, volume.height, volume.depth, 30);
-            //time = Time.realtimeSinceStartup - time;
-            //Debug.Log("gsdt done" + " time cost:" + time);
+    //IEnumerator All_path_pruning2()
+    //{
+    //    yield return new WaitForSeconds(1);
+    //    byte[] img1d = volume.GetPixelData<byte>(0).ToArray();
+    //    double[] gsdt;
+    //    //float[] gsdt = new float[volume.width * volume.height * volume.depth];
+    //    List<Marker> outTree;
+    //    if (is_gsdt)
+    //    {
+    //        float time = Time.realtimeSinceStartup;
+    //        //gsdt = FastMarching.FastMarching_dt_parallel(img1d, volume.width, volume.height, volume.depth, 30);
+    //        gsdt = FastMarching.MSFM_dt_parallel(img1d, volume.width, volume.height, volume.depth, 30);
+    //        time = Time.realtimeSinceStartup - time;
+    //        Debug.Log("gsdt parallel done" + " time cost:" + time);
+    //        yield return 0;
+    //        //time = Time.realtimeSinceStartup;
+    //        //gsdt = FastMarching.FastMarching_dt(img1d, volume.width, volume.height, volume.depth, 30);
+    //        //time = Time.realtimeSinceStartup - time;
+    //        //Debug.Log("gsdt done" + " time cost:" + time);
 
-            //         Texture3D texture3D = new Texture3D(volume.width, volume.height, volume.depth, TextureFormat.RFloat, false);
-            //var maximum = phi.Max();
-            //for(int i=0;i<phi.Length;i++)
-            //         {
-            //	gsdt[i] = (float)(phi[i] / maximum);
-            //         }
-            //         texture3D.SetPixelData(gsdt, 0);
-            //         texture3D.Apply();
-            //         AssetDatabase.DeleteAsset("Assets/Textures/" + "gsdt" + ".Asset");
-            //         AssetDatabase.CreateAsset(texture3D, "Assets/Textures/" + "gsdt" + ".Asset");
-            //         AssetDatabase.SaveAssets();
-            //         AssetDatabase.Refresh();
+    //        //         Texture3D texture3D = new Texture3D(volume.width, volume.height, volume.depth, TextureFormat.RFloat, false);
+    //        //var maximum = phi.Max();
+    //        //for(int i=0;i<phi.Length;i++)
+    //        //         {
+    //        //	gsdt[i] = (float)(phi[i] / maximum);
+    //        //         }
+    //        //         texture3D.SetPixelData(gsdt, 0);
+    //        //         texture3D.Apply();
+    //        //         AssetDatabase.DeleteAsset("Assets/Textures/" + "gsdt" + ".Asset");
+    //        //         AssetDatabase.CreateAsset(texture3D, "Assets/Textures/" + "gsdt" + ".Asset");
+    //        //         AssetDatabase.SaveAssets();
+    //        //         AssetDatabase.Refresh();
 
-            yield return 0;
-            Vector3 aabbmax = cube.transform.position + transform.localScale * 0.5f;
-            Vector3 aabbmin = cube.transform.position - transform.localScale * 0.5f;
-            Vector3 somaPos = seed.transform.position;
-            Vector3 v1 = new Vector3((somaPos - aabbmin).x / (aabbmax - aabbmin).x, (somaPos - aabbmin).y / (aabbmax - aabbmin).y, (somaPos - aabbmin).z / (aabbmax - aabbmin).z);
-            Vector3 rootPos = new Vector3(v1.x * volume.width, v1.y * volume.height, v1.z * volume.depth);
-            Marker root = new Marker(rootPos);
+    //        yield return 0;
+    //        Vector3 aabbmax = cube.transform.position + transform.localScale * 0.5f;
+    //        Vector3 aabbmin = cube.transform.position - transform.localScale * 0.5f;
+    //        Vector3 somaPos = seed.transform.position;
+    //        Vector3 v1 = new Vector3((somaPos - aabbmin).x / (aabbmax - aabbmin).x, (somaPos - aabbmin).y / (aabbmax - aabbmin).y, (somaPos - aabbmin).z / (aabbmax - aabbmin).z);
+    //        Vector3 rootPos = new Vector3(v1.x * volume.width, v1.y * volume.height, v1.z * volume.depth);
+    //        Marker root = new Marker(rootPos);
 
-            time = Time.realtimeSinceStartup;
-            //FastMarching.FastMarching_tree(root, gsdt, out outTree, volume.width, volume.height, volume.depth, 3, 30, false);
+    //        time = Time.realtimeSinceStartup;
+    //        //FastMarching.FastMarching_tree(root, gsdt, out outTree, volume.width, volume.height, volume.depth, 3, 30, false);
 
-            //use eyeData
-            //GameObject KeyPoints = GameObject.Find("KeyPoints");
-            //Des(KeyPoints);
+    //        //use eyeData
+    //        //GameObject KeyPoints = GameObject.Find("KeyPoints");
+    //        //Des(KeyPoints);
 
-            //FastMarching.MSFM_tree_boost(root, gsdt, out outTree, volume.width, volume.height, volume.depth, sdf, 3, 30, false);
-            FastMarching.MSFM_tree(root, gsdt, out outTree, volume.width, volume.height, volume.depth, 3, 30, false);
-            //FastMarching.FastMarching_tree(root, gsdt, out outTree, volume.width, volume.height, volume.depth,targets, 3, 30, false);
-            time = Time.realtimeSinceStartup - time;
-            Debug.Log("restruction done" + " time cost:" + time);
-            Debug.Log(outTree.Count);
-            yield return 0;
+    //        //FastMarching.MSFM_tree_boost(root, gsdt, out outTree, volume.width, volume.height, volume.depth, sdf, 3, 30, false);
+    //        FastMarching.MSFM_tree(root, gsdt, out outTree, volume.width, volume.height, volume.depth, 3, 30, false);
+    //        //FastMarching.FastMarching_tree(root, gsdt, out outTree, volume.width, volume.height, volume.depth,targets, 3, 30, false);
+    //        time = Time.realtimeSinceStartup - time;
+    //        Debug.Log("restruction done" + " time cost:" + time);
+    //        Debug.Log(outTree.Count);
+    //        yield return 0;
 
-            //var filtered_tree = new List<Marker>();
-            //HierarchyPrune.hierarchy_prune(outTree, out filtered_tree, img1d, volume.width, volume.height, volume.depth, 30, 5, true, SR_ratio);
-            //Debug.Log(filtered_tree.Count);
+    //        //var filtered_tree = new List<Marker>();
+    //        //HierarchyPrune.hierarchy_prune(outTree, out filtered_tree, img1d, volume.width, volume.height, volume.depth, 30, 5, true, SR_ratio);
+    //        //Debug.Log(filtered_tree.Count);
 
-            //yield return new WaitForSeconds(2);
-            //Primitive.CreateTree(filtered_tree, PaintingBoard.transform);
-            //GameObject HandTrackingManager = GameObject.Find("HandTrackingManager");
-            //HandTrackingManager.GetComponent<IndexTipTrackScript>().enabled = true;
-        }
-    }
+    //        //yield return new WaitForSeconds(2);
+    //        //Primitive.CreateTree(filtered_tree, PaintingBoard.transform);
+    //        //GameObject HandTrackingManager = GameObject.Find("HandTrackingManager");
+    //        //HandTrackingManager.GetComponent<IndexTipTrackScript>().enabled = true;
+    //    }
+    //}
 }

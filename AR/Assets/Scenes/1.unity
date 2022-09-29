@@ -1040,7 +1040,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1076769393}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4dffe514a45b66d459c55bd6fdf38434, type: 3}
   m_Name: 
@@ -1055,7 +1055,7 @@ MonoBehaviour:
   chosenObject: {fileID: 0}
   volume: {fileID: 0}
   Dims: {x: 512, y: 512, z: 512}
-  state: 4
+  state: 0
 --- !u!4 &1076769395
 Transform:
   m_ObjectHideFlags: 0
@@ -1662,12 +1662,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isMsfm: 1
-  bkg_thresh: 15
+  bkg_thresh: 10
   volume: {fileID: 11700000, guid: c2bd6a418d0eaef48b9a34d70781ef03, type: 2}
   seed: {fileID: 1499450323}
   cube: {fileID: 96922833}
   PaintingBoard: {fileID: 532495643}
-  occupancy: {fileID: 11700000, guid: 6e6c31e6b1baf6a479a81a41e41d8c79, type: 2}
+  occupancy: {fileID: 11700000, guid: e2873273dfda1e845a30615b4dc21790, type: 2}
 --- !u!4 &1897691022
 Transform:
   m_ObjectHideFlags: 0
@@ -1756,6 +1756,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   paintingBoard: {fileID: 96922833}
+  bkgThresh: 10
   isRepairing: 0
   volume: {fileID: 11700000, guid: c2bd6a418d0eaef48b9a34d70781ef03, type: 2}
   app2: {fileID: 1897691021}

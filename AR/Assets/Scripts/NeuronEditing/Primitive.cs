@@ -115,6 +115,7 @@ public class Primitive
 				parent.AddChild(node);
 				GameObject cylinder =  Primitive.CreateCylinder(node, parentTransform);
 				Chosen c = cylinder.AddComponent<Chosen>();
+				App2.MarkerMap[marker] = c;
 				c.nodeA = parent;
 				c.nodeB = node;
 				node.cylinder = cylinder;
@@ -123,9 +124,47 @@ public class Primitive
             {
 				sphere.name = "Soma";
 				Chosen soma = sphere.AddComponent<Chosen>();
+				App2.MarkerMap[marker] = soma;
 				soma.nodeA = node;
 				soma.nodeB = node;
             }
+		}
+	}
+
+	public static void CreateBranch(List<Marker> branch, Marker brachParentMarker, Transform parentTransform, int sz0, int sz1, int sz2)
+	{
+		Vector3 scale = new Vector3(1 / (float)sz0, 1 / (float)sz1, 1 / (float)sz2);
+		//float scale = 1 / 512.0f;
+		Dictionary<Marker, SwcNode> map = new Dictionary<Marker, SwcNode>();
+		foreach (var marker in branch)
+		{
+			SwcNode node = new SwcNode(marker, scale);
+			node.isBranch_root = marker.isBranch_root;
+			map.Add(marker, node);
+		}
+		foreach (var marker in branch)
+		{
+			SwcNode node = map[marker];
+
+			GameObject sphere = Primitive.CreateSphere(node, parentTransform);
+			node.sphere = sphere;
+
+			SwcNode parent;
+			if (marker.parent != null)
+			{
+				parent = map[marker.parent];
+			}
+            else
+            {
+				parent = App2.MarkerMap[brachParentMarker].nodeB;
+			}
+				parent.AddChild(node);
+				GameObject cylinder = Primitive.CreateCylinder(node, parentTransform);
+				Chosen c = cylinder.AddComponent<Chosen>();
+				App2.MarkerMap[marker] = c;
+				c.nodeA = parent;
+				c.nodeB = node;
+				node.cylinder = cylinder;
 		}
 	}
 

@@ -28,6 +28,7 @@ public class EyeCollisionDetect : MonoBehaviour
     int[] scanPathLengthCount = new int[100];
     Vector3 scanCenter = Vector3.zero;
 
+    public int bkgThresh;
     public bool isRepairing = false;
 
     bool flag = true;
@@ -174,7 +175,7 @@ public class EyeCollisionDetect : MonoBehaviour
             distance += dt;
             if (distance > max_length) break;
         }
-        Debug.Log("max_intesity" + max_intensity);
+        //Debug.Log("max_intesity" + max_intensity);
         
 
         int i = (int)(max_index % sz0);
@@ -187,7 +188,7 @@ public class EyeCollisionDetect : MonoBehaviour
         pos = pos - new Vector3(.5f, .5f, .5f);
         pos = paintingBoard.transform.TransformPoint(pos);
 
-        if (max_intensity >= 30)
+        if (max_intensity >= bkgThresh)
         {
             targetIndexs.Add(max_index);
             if (isRepairing == true) app2.TraceTarget(max_index);
