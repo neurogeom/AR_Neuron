@@ -1,15 +1,7 @@
 Library
 Logs
 obj
-Packages
-Assets/Plugins
 Assets/Textures
-Assets/MRTK
-Assets/NuGet
-Assets/XR
-Assets/Packages
-Assets/TextMesh Pro
-*.meta
 .vs
 *.vsconfig
 *.config
