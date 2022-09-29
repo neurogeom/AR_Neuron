@@ -4,14 +4,11 @@ obj
 Packages
 Assets/Plugins
 Assets/Textures
-Assets/MixedRealityToolkit.Generated
 Assets/MRTK
 Assets/NuGet
 Assets/XR
 Assets/Packages
 Assets/TextMesh Pro
-ProjectSettings
-UserSettings
 *.meta
 .vs
 *.vsconfig
