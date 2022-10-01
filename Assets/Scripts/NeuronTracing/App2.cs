@@ -35,22 +35,24 @@ public class App2 : MonoBehaviour
     [SerializeField] GameObject PaintingBoard;
     [SerializeField] Texture3D occupancy;
 
-    static public int[] targets = { };
+    public int[] targets = { };
     byte[] img1d;
     byte[] occupancyData;
     Vector3Int dims;
     Vector3 rootPos;
-    List<Marker> filtered_tree = new List<Marker>();
-    static Marker root;
-    static Marker msfm_root;
+    List<Marker> filteredTree = new List<Marker>();
+    Marker root;
+    Marker msfm_root;
     List<Marker> outTree;
 
     FastMarching fm;
-
-    static public int RepairTargetIndex;
-    static public Dictionary<Marker, Chosen> MarkerMap = new Dictionary<Marker, Chosen>();
+    HierarchyPrune hp;
 
     private Vector3Int vDim,oDim;
+    private List<Marker> completeTree;
+    List<Marker> resampledTree;
+    List<Marker> filteredBranch;
+    List<Marker> resampledBranch;
 
     async void Start()
     {
@@ -65,16 +67,11 @@ public class App2 : MonoBehaviour
 
         rootPos = new Vector3(v1.x * dims.x, v1.y * dims.y, v1.z * dims.z);
         Debug.Log(rootPos);
-        //StartCoroutine(All_path_pruning2());
-        //Thread childThread;
-        //ThreadStart childRef = new ThreadStart(AllPathPruning2) ;
-        //childThread = new Thread(childRef);
-        //childThread.Start();
-        //AllPathPruning2();
 
         root = new Marker(rootPos);
         msfm_root = new Marker(rootPos / 4);
         fm = new FastMarching();
+        hp = new HierarchyPrune();
         vDim = new Vector3Int(volume.width, volume.height, volume.depth);
         oDim = new Vector3Int(occupancy.width, occupancy.height, occupancy.depth);
 
@@ -88,9 +85,10 @@ public class App2 : MonoBehaviour
             catch (Exception ex) { Debug.LogError(ex); }
         });
 
-        Primitive.CreateTree(filtered_tree, cube.transform, vDim.x, vDim.y, vDim.z);
+        Primitive.CreateTree(resampledTree, cube.transform, vDim.x, vDim.y, vDim.z);
         //task.Start();
     }
+
 
     void AllPathPruning2()
     {
@@ -115,28 +113,30 @@ public class App2 : MonoBehaviour
             //Debug.Log("gsdt parallel done" + " time cost:" + time);
             Debug.Log("gsdt parallel done" + " time cost:");
 
-            //yield return 0;
-            //time = Time.realtimeSinceStartup;
-            //gsdt = FastMarching.FastMarching_dt(img1d, volume.width, volume.height, volume.depth, 30);
-            //time = Time.realtimeSinceStartup - time;
-            //Debug.Log("gsdt done" + " time cost:" + time);
+            {
+                //yield return 0;
+                //time = Time.realtimeSinceStartup;
+                //gsdt = FastMarching.FastMarching_dt(img1d, volume.width, volume.height, volume.depth, 30);
+                //time = Time.realtimeSinceStartup - time;
+                //Debug.Log("gsdt done" + " time cost:" + time);
 
 
-            //float[] gsdt_float = new float[gsdt.Length];
-            //Texture3D texture3D = new Texture3D(occupancy.width, occupancy.height, occupancy.depth, TextureFormat.RFloat, false);
-            //var maximum = msfm.Max()/4;
-            //for (int i = 0; i < msfm.Length; i++)
-            //{
-            //    //gsdt[i] = (float)(gsdt[i] / maximum);
-            //    gsdt_float[i] = (float)(msfm[i] / maximum);
-            //}
-            //texture3D.SetPixelData(gsdt_float, 0);
-            //texture3D.Apply();
-            //AssetDatabase.DeleteAsset("Assets/Textures/" + "fmdt" + ".Asset");
-            //AssetDatabase.CreateAsset(texture3D, "Assets/Textures/" + "fmdt" + ".Asset");
-            //AssetDatabase.SaveAssets();
-            //AssetDatabase.Refresh();
-            //return;
+                //float[] gsdt_float = new float[gsdt.Length];
+                //Texture3D texture3D = new Texture3D(occupancy.width, occupancy.height, occupancy.depth, TextureFormat.RFloat, false);
+                //var maximum = msfm.Max()/4;
+                //for (int i = 0; i < msfm.Length; i++)
+                //{
+                //    //gsdt[i] = (float)(gsdt[i] / maximum);
+                //    gsdt_float[i] = (float)(msfm[i] / maximum);
+                //}
+                //texture3D.SetPixelData(gsdt_float, 0);
+                //texture3D.Apply();
+                //AssetDatabase.DeleteAsset("Assets/Textures/" + "fmdt" + ".Asset");
+                //AssetDatabase.CreateAsset(texture3D, "Assets/Textures/" + "fmdt" + ".Asset");
+                //AssetDatabase.SaveAssets();
+                //AssetDatabase.Refresh();
+                //return;
+            }
 
             //time = Time.time;
             //FastMarching.FastMarching_tree(root, gsdt, out outTree, volume.width, volume.height, volume.depth, 3, 30, false);
@@ -148,13 +148,17 @@ public class App2 : MonoBehaviour
             //FastMarching.MSFM_tree_boost(root, gsdt, out outTree, volume.width, volume.height, volume.depth, sdf, 3, 30, false);
 
             //FastMarching.FastMarching_tree(root, gsdt, out outTree, volume.width, volume.height, volume.depth, 3, 30, false);
-            fm.FastMarching_tree(root, gsdt, out outTree, vDim.x,vDim.y,vDim.z, oDim.x, oDim.y, oDim.z, targets, 3, bkg_thresh, true);
+            completeTree =  fm.FastMarching_tree(root, gsdt, vDim.x,vDim.y,vDim.z, oDim.x, oDim.y, oDim.z, targets, 3, bkg_thresh, true);
             //time = Time.time - time;
             //Debug.Log("restruction done" + " time cost:" + time);
-            Debug.Log(outTree.Count);
+            Debug.Log(completeTree.Count);
 
-            filtered_tree = new List<Marker>();
-            HierarchyPrune.hierarchy_prune(outTree, out filtered_tree, img1d, vDim.x, vDim.y, vDim.z, bkg_thresh, 10, true, SR_ratio);
+            filteredTree = hp.hierarchy_prune(completeTree, img1d, vDim.x, vDim.y, vDim.z, bkg_thresh, 10, true, SR_ratio);
+            Debug.Log(filteredTree.Count);
+
+            resampledTree = hp.Resample(filteredTree, img1d, vDim.x, vDim.y, vDim.z);
+            Debug.Log(resampledTree.Count);
+
 
             //yield return new WaitForSeconds(2);
             
@@ -166,38 +170,38 @@ public class App2 : MonoBehaviour
         }
     }
 
-    public void TraceTarget(int target_index)
-    {
-        //DestroyImmediate(GameObject.Find("Temp"));
-        //GameObject temp = new GameObject("Temp");
-        //temp.transform.position = Vector3.zero;
-        //Debug.Log(outTree.Count);
-        //List<Marker> markers = new List<Marker>(outTree);
 
-        (Marker branchMarker, Marker branchParentMarker) = fm.TraceTarget(ref outTree, root, target_index, volume.width, volume.height, volume.depth, occupancy.width, occupancy.height, occupancy.depth, 3, bkg_thresh);
-        Marker realBranchParentMarker = new Marker();
-        float minDistance = float.MaxValue;
-        Vector3 direction = (branchParentMarker.position - branchMarker.position).normalized;
-        foreach (Marker marker in filtered_tree)
+    async public void TargetProcess(int target_index)
+    {
+        await Task.Run(()=>TraceTarget(target_index));
+
+        Primitive.CreateBranch(resampledBranch, cube.transform, vDim.x, vDim.y, vDim.z);
+    }
+
+    void TraceTarget(int target_index)   
+    {
+        Marker branchRoot;
+        List<Marker> completeBranch = fm.TraceTarget(filteredTree, out branchRoot, root, target_index, vDim.x, vDim.y, vDim.z, oDim.x, oDim.y, oDim.z, 3, bkg_thresh);
+
+        filteredBranch = hp.hierarchy_prune_repair(completeBranch, img1d, vDim.x, vDim.y, vDim.z, bkg_thresh, 10, SR_ratio);
+
+        filteredTree.Union(filteredBranch);
+
+        resampledBranch = hp.Resample(filteredBranch, img1d, vDim.x, vDim.y, vDim.z);
+
+        foreach(Marker m in resampledBranch)
         {
-            if (Vector3.Dot((marker.position - branchMarker.position).normalized, direction) < 0.8) continue;
-            float dis = Vector3.Distance(marker.position, branchParentMarker.position);
-            if (dis < minDistance)
-            {
-                minDistance = dis;
-                realBranchParentMarker = marker;
-            }
+            if (m.parent == null) m.parent = branchRoot;
         }
 
-        List<Marker> branch = new List<Marker>();
-        HierarchyPrune.hierarchy_prune_repair(outTree, out branch, img1d, volume.width, volume.height, volume.depth, bkg_thresh, 10, SR_ratio);
+        Debug.Log("filteredTree count:" + filteredTree.Count);
 
 
-        Primitive.CreateBranch(branch, realBranchParentMarker, cube.transform, volume.width, volume.height, volume.depth);
-        branchMarker.parent = realBranchParentMarker;
-        Debug.Log(filtered_tree.Count);
-        filtered_tree.AddRange(branch);
-        Debug.Log(filtered_tree.Count);
+        //Primitive.CreateBranch(branch, realBranchParentMarker, cube.transform, volume.width, volume.height, volume.depth);
+        //branchMarker.parent = realBranchParentMarker;
+        //Debug.Log(filtered_tree.Count);
+        //filtered_tree.AddRange(branch);
+        //Debug.Log(filtered_tree.Count);
     }
 
     // Update is called once per frame

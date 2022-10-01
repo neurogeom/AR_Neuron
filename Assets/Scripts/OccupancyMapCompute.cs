@@ -17,64 +17,11 @@ public class OccupancyMapCompute : MonoBehaviour
     private RenderTexture dist_swap;
     private Vector3Int Dmap;
     // Start is called before the first frame update
-    void Start()
+
+    public Texture3D computeOccupancyMap()
     {
         Dimensions = new Vector3Int(Volume.width, Volume.height, Volume.depth);
         Dmap = Dimensions / BlockSize;
-        computeOccupancyMap2();
-        //computeOccupancyMap();
-        
-        //computeDistanceMap2();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
-    void computeOccupancyMap()
-    {
-        int kernelKey = occupancyCompute.FindKernel("OccupancyMap");
-        occupancyCompute.SetInt("BlockSize", BlockSize);
-        occupancyCompute.SetFloats("Dimensions", Dimensions.x, Dimensions.y, Dimensions.z);
-        occupancyCompute.SetTexture(kernelKey, "Volume", Volume);
-
-        Texture3D texture3D = new Texture3D(Dmap.x, Dmap.y, Dmap.z, TextureFormat.R8, false);
-
-        Texture2D[] texture2Ds = new Texture2D[Dmap.z];
-        List<Color> tex = new List<Color>();
-
-        for (int i = 0; i < Dmap.z; i++)
-        {
-            resultTexture = new RenderTexture(Dmap.x, Dmap.y, 1, RenderTextureFormat.R8);
-            resultTexture.enableRandomWrite = true;
-            resultTexture.Create();
-            occupancyCompute.SetTexture(kernelKey, "Result", resultTexture);
-            occupancyCompute.SetInt("depth", i);
-            occupancyCompute.Dispatch(kernelKey, Dmap.x / 8, Dmap.y / 8, 1);
-
-            RenderTexture.active = resultTexture;
-            texture2Ds[i] = new Texture2D(Dmap.x, Dmap.y, TextureFormat.R8, false);
-            texture2Ds[i].ReadPixels(new Rect(0, 0, Dmap.x, Dmap.y), 0, 0);
-            texture2Ds[i].Apply();
-            Color[] temp = texture2Ds[i].GetPixels();
-            tex.AddRange(temp);
-            Debug.Log("compute depth:" + i);
-        }
-        texture3D.SetPixels(tex.ToArray());
-        texture3D.Apply();
-        string name = Volume.name;
-        AssetDatabase.DeleteAsset("Assets/Textures/" + name + "_occupancy" + ".Asset");
-        AssetDatabase.CreateAsset(texture3D, "Assets/Textures/" + name + "_occupancy" + ".Asset");
-        AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
-        Debug.Log("SavingTexture succeeded!");
-        OccupancyMap = texture3D;
-    }
-
-    void computeOccupancyMap2()
-    {
         int kernelKey = occupancyCompute.FindKernel("OccupancyMap");
         occupancyCompute.SetInt("BlockSize", BlockSize);
         occupancyCompute.SetFloats("Dimensions", Dimensions.x, Dimensions.y, Dimensions.z);
@@ -107,6 +54,8 @@ public class OccupancyMapCompute : MonoBehaviour
         AssetDatabase.Refresh();
         Debug.Log("SavingTexture succeeded!");
         OccupancyMap = texture3D;
+
+        return texture3D;
     }
 
     void computeDistanceMap2()

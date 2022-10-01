@@ -44,7 +44,7 @@ public class HierarchyPrune
             return markers;
         }
     }
-    static void swc2topo_segs(List<Marker> inswc, out List<HierarchySegment> topo_segs, byte[] img, long sz0, long sz1, long sz2)
+    List<HierarchySegment> swc2topo_segs(List<Marker> inswc, byte[] img, long sz0, long sz1, long sz2)
     {
         int tol_num = inswc.Count;
         Dictionary<Marker, int> swc_map = new Dictionary<Marker, int>();
@@ -62,6 +62,11 @@ public class HierarchyPrune
         }
         for (int i = 0; i < tol_num; i++)
         {
+            if (inswc[i].parent != null && !swc_map.ContainsKey(inswc[i].parent))
+            {
+                inswc[i].parent = null;
+                Debug.Log("fffff");
+            }
             if (inswc[i].parent == null) continue;
             int parent_index = swc_map[inswc[i].parent];
             childs_num[parent_index]++;
@@ -108,7 +113,7 @@ public class HierarchyPrune
 
         //create hierarchy segments
         Dictionary<Marker, int> leaf_index_map = new Dictionary<Marker, int>();
-        topo_segs = new List<HierarchySegment>();
+        var topo_segs = new List<HierarchySegment>();
         for (int i = 0; i < leaf_num; i++)
         {
             topo_segs.Add(new HierarchySegment());
@@ -144,9 +149,11 @@ public class HierarchyPrune
                 topo_segs[i].parent = topo_segs[leaf_index2];
             }
         }
+
+        return topo_segs;
     }
 
-    static List<Marker> topo_segs2swc(List<HierarchySegment> topo_segs, int swc_type)
+     List<Marker> topo_segs2swc(List<HierarchySegment> topo_segs, int swc_type)
     {
         var outswc = new List<Marker>();
         double min_dst = double.MaxValue;
@@ -186,7 +193,7 @@ public class HierarchyPrune
         return outswc;
     }
 
-    static void topo_segs2swc(HashSet<HierarchySegment> out_segs, List<HierarchySegment> filtered_segs, out List<Marker> outswc, int swc_type)
+    void topo_segs2swc(HashSet<HierarchySegment> out_segs, List<HierarchySegment> filtered_segs, out List<Marker> outswc, int swc_type)
     {
         outswc = new List<Marker>();
         foreach (HierarchySegment topo_seg in filtered_segs)
@@ -202,13 +209,12 @@ public class HierarchyPrune
         }
     }
 
-    public static void hierarchy_prune(List<Marker> inswc, out List<Marker> outswc, byte[] img, long sz0, long sz1, long sz2, double bkg_thresh = 30.0, double length_thresh = 5.0, bool isSoma = true, double SR_ratio = 1.0 / 9.0)
+    public List<Marker> hierarchy_prune(List<Marker> inswc, byte[] img, long sz0, long sz1, long sz2, double bkg_thresh = 30.0, double length_thresh = 5.0, bool isSoma = true, double SR_ratio = 1.0 / 9.0)
     {
-        List<HierarchySegment> topo_segs;
         long sz01 = sz0 * sz1;
         long tol_sz = sz01 * sz2;
 
-        swc2topo_segs(inswc, out topo_segs, img, sz0, sz1, sz2);
+        List<HierarchySegment> topo_segs  = swc2topo_segs(inswc, img, sz0, sz1, sz2);
         Debug.Log(topo_segs.Count);
 
 
@@ -414,18 +420,18 @@ public class HierarchyPrune
 
         //topo_segs2swc(out_segs, out outswc, 0);
         //Debug.Log(outswc.Count);
+        var outswc = topo_segs2swc(out_segs, 0);
+        return outswc;
         out_segs = Resample(out_segs, 10);
-        outswc = topo_segs2swc(out_segs, 0);
         //topo_segs2swc(visited_segs,filter_segs, out outswc, 0);
     }
 
-    public static void hierarchy_prune_repair(List<Marker> inswc, out List<Marker> outswc, byte[] img, long sz0, long sz1, long sz2, double bkg_thresh = 30.0, double length_thresh = 5.0, double SR_ratio = 1.0 / 9.0)
+    public List<Marker> hierarchy_prune_repair(List<Marker> inswc, byte[] img, long sz0, long sz1, long sz2, double bkg_thresh = 30.0, double length_thresh = 5.0, double SR_ratio = 1.0 / 9.0)
     {
-        List<HierarchySegment> topo_segs;
         long sz01 = sz0 * sz1;
         long tol_sz = sz01 * sz2;
 
-        swc2topo_segs(inswc, out topo_segs, img, sz0, sz1, sz2);
+        List<HierarchySegment> topo_segs = swc2topo_segs(inswc, img, sz0, sz1, sz2);
         Debug.Log(topo_segs.Count);
 
         List<HierarchySegment> filter_segs = new List<HierarchySegment>();
@@ -606,12 +612,13 @@ public class HierarchyPrune
         //    if (tmpimg[i] == 0) covered_sig += img[i];
         //}
         Debug.Log("S/T ratio" + covered_sig / tree_sig + "(" + covered_sig + "/" + tree_sig + ")");
-        Debug.Log(out_segs.Count);
+        //Debug.Log(out_segs.Count);
 
         //topo_segs2swc(out_segs, out outswc, 0);
         //Debug.Log(outswc.Count);
-        out_segs = Resample(out_segs, 5);
-        outswc = topo_segs2swc(out_segs, 0);
+        //out_segs = Resample(out_segs, 10);
+        List<Marker> outswc = topo_segs2swc(out_segs, 0);
+        return outswc;
         //topo_segs2swc(visited_segs,filter_segs, out outswc, 0);
     }
 
@@ -663,7 +670,19 @@ public class HierarchyPrune
     //    return ir;
     //}
 
-    public static List<HierarchySegment> Resample(List<HierarchySegment> in_segs, int factor)
+    public List<Marker> Resample(List<Marker> inswc, byte[] img, long sz0, long sz1, long sz2)
+    {
+        long sz01 = sz0 * sz1;
+        long tol_sz = sz01 * sz2;
+
+        List<HierarchySegment> topo_segs = swc2topo_segs(inswc, img, sz0, sz1, sz2);
+        topo_segs = Resample(topo_segs, 10);
+        List<Marker> outswc = topo_segs2swc(topo_segs, 0);
+        //topo_segs2swc(visited_segs,filter_segs, out outswc, 0);
+        return outswc;
+    }
+
+    public List<HierarchySegment> Resample(List<HierarchySegment> in_segs, int factor)
     {
         foreach (var seg in in_segs)
         {

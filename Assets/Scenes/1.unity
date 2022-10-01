@@ -185,7 +185,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &85664456
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -532,6 +532,50 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &544645918
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 544645920}
+  - component: {fileID: 544645919}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &544645919
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 544645918}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8bc9d045f8b684d428ca0f06789dd368, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &544645920
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 544645918}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.8411486, y: 2.6486137, z: 16.213993}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 16
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &584151689
 GameObject:
   m_ObjectHideFlags: 0
@@ -707,6 +751,58 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 688149081}
   m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &733781077
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 733781079}
+  - component: {fileID: 733781078}
+  m_Layer: 0
+  m_Name: Config
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &733781078
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 733781077}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08ea7e86edfadd04bb884e7396f1c7f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  path: 1_2_Ch2.tif_uint8.v3dpbd
+  volume: {fileID: 11700000, guid: b0c2239d0b14f8640bfc4db427bcf797, type: 2}
+  occupancy: {fileID: 0}
+  backgroundThreshold: 10
+  blockSize: 4
+  seed: {fileID: 0}
+  cube: {fileID: 0}
+  paintingBoard: {fileID: 0}
+--- !u!4 &733781079
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 733781077}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.8411486, y: 2.6486137, z: 16.213993}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 15
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &809086223
 GameObject:
   m_ObjectHideFlags: 0
@@ -1648,7 +1744,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1897691021
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1668,6 +1764,7 @@ MonoBehaviour:
   cube: {fileID: 96922833}
   PaintingBoard: {fileID: 532495643}
   occupancy: {fileID: 11700000, guid: 4461f3f050ed191429df9abd6e9a9d14, type: 2}
+  targets: 
 --- !u!4 &1897691022
 Transform:
   m_ObjectHideFlags: 0
@@ -1758,7 +1855,7 @@ MonoBehaviour:
   paintingBoard: {fileID: 96922833}
   bkgThresh: 10
   isRepairing: 0
-  volume: {fileID: 11700000, guid: 4461f3f050ed191429df9abd6e9a9d14, type: 2}
+  volume: {fileID: 11700000, guid: 17e07913b87d0664984ed075d6d878da, type: 2}
   app2: {fileID: 1897691021}
 --- !u!4 &1948615979
 Transform:

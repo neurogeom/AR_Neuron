@@ -100,7 +100,7 @@ public class EyeCollisionDetect : MonoBehaviour
                         scanCenter.z /= scanCount;
                         //addHitPoint(scanCenter);
                         getSeed(scanCenter, localGazeOrigin);
-                        App2.targets = targetIndexs.ToArray();
+                        app2.targets = targetIndexs.ToArray();
 
                     }
                     //recordEyeData(gamma);
@@ -191,7 +191,7 @@ public class EyeCollisionDetect : MonoBehaviour
         if (max_intensity >= bkgThresh)
         {
             targetIndexs.Add(max_index);
-            if (isRepairing == true) app2.TraceTarget(max_index);
+            if (isRepairing == true) app2.TargetProcess(max_index);
             GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             sphere.transform.localScale = new Vector3(.06f, .06f, .06f);
             sphere.transform.position = pos;
