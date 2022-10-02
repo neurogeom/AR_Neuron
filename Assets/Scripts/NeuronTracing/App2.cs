@@ -174,7 +174,7 @@ public class App2 : MonoBehaviour
     async public void TargetProcess(int target_index)
     {
         await Task.Run(()=>TraceTarget(target_index));
-
+        //TraceTarget(target_index);
         Primitive.CreateBranch(resampledBranch, cube.transform, vDim.x, vDim.y, vDim.z);
     }
 
@@ -183,9 +183,15 @@ public class App2 : MonoBehaviour
         Marker branchRoot;
         List<Marker> completeBranch = fm.TraceTarget(filteredTree, out branchRoot, root, target_index, vDim.x, vDim.y, vDim.z, oDim.x, oDim.y, oDim.z, 3, bkg_thresh);
 
+        Debug.Log("Tracing Done");
+
         filteredBranch = hp.hierarchy_prune_repair(completeBranch, img1d, vDim.x, vDim.y, vDim.z, bkg_thresh, 10, SR_ratio);
 
-        filteredTree.Union(filteredBranch);
+        Debug.Log("Pruning Done");
+
+        Debug.Log(filteredBranch.Count);
+        filteredTree = filteredTree.Union(filteredBranch).ToList();
+        Debug.Log(filteredBranch.Count);
 
         resampledBranch = hp.Resample(filteredBranch, img1d, vDim.x, vDim.y, vDim.z);
 
@@ -193,6 +199,7 @@ public class App2 : MonoBehaviour
         {
             if (m.parent == null) m.parent = branchRoot;
         }
+        Debug.Log("resample done");
 
         Debug.Log("filteredTree count:" + filteredTree.Count);
 

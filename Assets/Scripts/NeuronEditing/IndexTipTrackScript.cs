@@ -7,6 +7,7 @@ using Microsoft.MixedReality.Toolkit.UI;
 using System.IO;
 using System;
 using System.Linq;
+using Microsoft.MixedReality.Toolkit;
 /*
 Created by BlackFJ
 */
@@ -49,9 +50,14 @@ public class IndexTipTrackScript : MonoBehaviour
     [SerializeField] Texture3D volume;
 
     public Vector3 Dims = new Vector3(512, 512, 512);
-    public enum States { Selecting = 0, Drawing = 1, Reparing = 2, Waiting = 3 ,Drawing_2 =4};
+    public enum States { Selecting = 0, Drawing = 1, Reparing = 2, Waiting = 3, Drawing_2 = 4 };
     [SerializeField] public States state;
 
+    public GameObject paintingTrack;
+    private Vector3 preTrackPos;
+
+    public int bkgThreshold;
+    public Transform cubeTransform;
 
 
     private bool Finger_is_close()
@@ -323,11 +329,11 @@ public class IndexTipTrackScript : MonoBehaviour
                         Vector3 repairDirection = RightIndexTipPosition - repairSeed.sphere.transform.position;
                         repairDirection = PaintingBoardTransform.InverseTransformDirection(repairDirection).normalized;
                         List<Marker> list;
-                        
+
                         //list = FastMarching.FastMarching_repair(repairMarker, repairDirection, 512, 512, 512);
                         //Primitive.RepairTree(list, repairSeed, PaintingBoardTransform, volume.width,volume.height,volume.depth);
-                        
-                        
+
+
                         //Debug.Log(list.Count);
                         //byte[] img = volume.GetPixelData<byte>(0).ToArray();
                         //List<Marker> filtered_tree = HierarchyPrune.hierarchy_prune_repair(list, img, 512, 512, 512, 30, 1, false);
@@ -362,54 +368,20 @@ public class IndexTipTrackScript : MonoBehaviour
             case States.Drawing_2:
                 if (!IsContinuous)
                 {
-                    if (Finger_is_close() && NumChosen > 0)
+                    if (Finger_is_close())
                     {
-                        print("IsPainting!");
-
-                        if (chosenObject.GetComponent<Chosen>().nodeB == soma)
+                        markerList.Clear();
+                        var transformedPos = cubeTransform.InverseTransformPoint(RightIndexTipPose.Position);
+                        //pos = PaintingBoardTransform.worldToLocalMatrix * new Vector4(pos.x, pos.y, pos.z, 1);
+                        transformedPos += new Vector3(0.5f, 0.5f, 0.5f);
+                        var marker = new Marker(transformedPos);
+                        Vector3 pos = marker.position;
+                        if (pos.x >= 0 && pos.x < 1 && pos.y >= 0 && pos.y < 1 && pos.z >= 0 && pos.z < 1)
                         {
-                      
-
-                            preNode = soma;
-
-                            Debug.Log("create soma child");
+                            markerList.Add(marker);
                         }
-                        else
-                        {
-                            //NodeB===========brokenNode=============NodeA
-                            //                   //
-                            //                  //
-                            //                 //
-                            //               newNode
-
-                            PosChosen = getBreakPosition(chosenObject);
-                            var preChosen = chosenObject.GetComponent<Chosen>();
-                            var nodeA = preChosen.nodeA;
-                            var nodeB = preChosen.nodeB;
-                            var newNode = new SwcNode(PosChosen, nodeB.radius, PaintingBoardTransform);
-                            nodeA.RemoveChild(preChosen.nodeB);
-                            nodeA.AddChild(newNode);
-                            newNode.AddChild(nodeB);
-                            newNode.isBranch_root = true;
-
-                            newNode.sphere = Primitive.CreateSphere(newNode, PaintingBoardTransform);
-                            nodeB.cylinder = Primitive.CreateCylinder(nodeB, PaintingBoardTransform);
-                            var chosenB = nodeB.cylinder.AddComponent<Chosen>();
-                            chosenB.setNode(nodeB);
-
-                            newNode.cylinder = Primitive.CreateCylinder(newNode, PaintingBoardTransform);
-                            var chosenBroken = newNode.cylinder.AddComponent<Chosen>();
-                            chosenBroken.setNode(newNode);
-
-                            preNode = newNode;
-
-                            markerList.Clear();
-                            markerList.Add(new Marker(preNode.position+ new Vector3(0.5f, 0.5f, 0.5f)));
-
-                            GameObject.Destroy(chosenObject);
-
-                            Debug.Log("start drawing_2");
-                        }
+                        preTrackPos = RightIndexTipPose.Position;
+                        Debug.Log("start drawing_2");
                         IsContinuous = true;
                     }
                 }
@@ -420,28 +392,35 @@ public class IndexTipTrackScript : MonoBehaviour
                         if (markerList.Count >= 2)
                         {
                             IsContinuous = false;
-                            var result= VirutalFinger.RefineSketchCurve(markerList, volume, 30, 10);
-                            Primitive.RepairTree(result,preNode,PaintingBoardTransform, volume.width, volume.height, volume.depth);   
+                            var result = VirutalFinger.RefineSketchCurve(markerList, volume, bkgThreshold, 10);
+                            Primitive.CreateBranch(result, cubeTransform, volume.width, volume.height, volume.depth);
                         }
                         IsContinuous = false;
+                        //for(int i = 0; i < paintingTrack.transform.childCount; i++)
+                        //{
+                        //    Destroy(paintingTrack.transform.GetChild(i).gameObject);
+                        //}
                     }
                     else
                     {
-                        if ((RightIndexTipPosition - preNode.sphere.transform.position).magnitude > 0.01)
+                        if ((preTrackPos - RightIndexTipPose.Position).magnitude > 0.01)
                         {
-                            var pos = RightIndexTipPosition;
                             var tmpSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                            tmpSphere.transform.position = pos;
-                            tmpSphere.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f) ;
-                            pos = PaintingBoardTransform.worldToLocalMatrix * new Vector4(pos.x, pos.y, pos.z, 1);
-                            pos += new Vector3(0.5f, 0.5f, 0.5f);
-                            var marker = new Marker(pos);
-                            markerList.Add(marker);
-
-
-                            Debug.Log("create continuous cylinder");
+                            tmpSphere.transform.position = RightIndexTipPose.Position;
+                            tmpSphere.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
+                            tmpSphere.transform.SetParent(paintingTrack.transform, true);
+                            var transformedPos = cubeTransform.InverseTransformPoint(RightIndexTipPose.Position);
+                            //pos = PaintingBoardTransform.worldToLocalMatrix * new Vector4(pos.x, pos.y, pos.z, 1);
+                            transformedPos += new Vector3(0.5f, 0.5f, 0.5f);
+                            var marker = new Marker(transformedPos);
+                            Vector3 pos = marker.position;
+                            if (pos.x >= 0 && pos.x < 1 && pos.y >= 0 && pos.y < 1 && pos.z >=0 && pos.z < 1)
+                            {
+                                markerList.Add(marker);
+                                preTrackPos = RightIndexTipPose.Position;
+                            }
+                            //Debug.Log("create continuous cylinder");
                         }
-
                     }
                 }
                 break;

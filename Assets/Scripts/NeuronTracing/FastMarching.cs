@@ -1358,7 +1358,6 @@ public class FastMarching
             }
             Vector3 b = Vector3.Cross(a, direction).normalized;
             int serachLength = 25;
-            HashSet<int> trunk = new HashSet<int>();
             //if (heap.elems.Count > 0)
             //{
             //    ////计算另一个方向

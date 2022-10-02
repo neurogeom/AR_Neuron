@@ -15,8 +15,10 @@ MonoBehaviour:
   boolPreferences:
     keys:
     - MixedRealityToolkit_Editor_RunOptimalConfig
+    - _MixedRealityToolkit_Editor_LockProfiles
+    - MixedRealityToolkit_Editor_NullDataProviders
     - _MixedRealityToolkit_Editor_IgnoreSettingsPrompts
-    values: 0100
+    values: 01010000
   intPreferences:
     keys:
     - MixedRealityToolkit_Editor_AudioSpatializerCount

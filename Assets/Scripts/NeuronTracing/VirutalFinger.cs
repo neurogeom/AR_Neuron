@@ -11,19 +11,27 @@ public class VirutalFinger
     public static List<Marker> RefineSketchCurve(List<Marker> markerList, Texture3D volume, int bkg_thresh = 30, int radius = 5, int cnn_type = 2)
     {
         int sz0 = volume.width, sz1 = volume.height, sz2 = volume.depth;
-        int sz01 = sz0 * sz1;
-        int tol_sz = sz01 * sz2;
-        byte[] img = volume.GetPixelData<byte>(0).ToArray();
-        double[] gsdt = new double[tol_sz];
-        States[] state = new States[tol_sz];
+        //int sz01 = sz0 * sz1;
+        //int tol_sz = sz01 * sz2;
+        //byte[] img = volume.GetPixelData<byte>(0).ToArray();
+        //float[] gsdt = new float[tol_sz];
+        //States[] state = new States[tol_sz];
+        Debug.Log(markerList.Count);
+        for(int i = 0; i < markerList.Count; i++)
+        {
+            Debug.Log(markerList[i].position);
+        }
         markerList = ResampleMarkers(markerList, new Vector3(sz0, sz1, sz2));
-
+        foreach(Marker marker in markerList)
+        {
+            Debug.Log(marker.position);
+        }
         List<Marker> preList = null;
         for (int i = 1; i < markerList.Count; i++)
         {
             Marker preMarker = markerList[i - 1];
             Marker curMarker = markerList[i];
-            var curList = FastMarching_Linker(preMarker, curMarker, volume);
+            var curList = FastMarching_Linker(preMarker, curMarker, volume,bkg_thresh,radius,cnn_type);
             if (preList != null)
             {
                 curList[0].parent = preList.Last();
@@ -43,35 +51,34 @@ public class VirutalFinger
         List<Marker> outList = new List<Marker>();
 
         Vector3 direction = (curMarker.position - preMarker.position).normalized;
-        var subMarkers = Get_Disk_Markers(preMarker, direction);
-        var tarMarkers = Get_Disk_Markers(curMarker, direction);
+        var subMarkers = Get_Disk_Markers(preMarker, direction,radius);
+        var tarMarkers = Get_Disk_Markers(curMarker, direction,radius);
 
         int sz0 = volume.width, sz1 = volume.height, sz2 = volume.depth;
         int sz01 = sz0 * sz1;
         int tol_sz = sz01 * sz2;
-        Debug.Log(tol_sz);
         byte[] img = volume.GetPixelData<byte>(0).ToArray();
-        double[] phi = new double[tol_sz];
+        float[] phi = new float[tol_sz];
         States[] state = new States[tol_sz];
         int[] parent = new int[tol_sz];
-        double max_intensity = 0;
-        double min_intensity = double.MaxValue;
+        float max_intensity = 0;
+        float min_intensity = float.MaxValue;
         for (int index= 0; index < tol_sz; index++)
         {
             parent[index] = index;
-            phi[index] = double.MaxValue;
+            phi[index] = float.MaxValue;
             state[index] = States.FAR;
             max_intensity = Math.Max(max_intensity, img[index]);
             min_intensity = Math.Min(min_intensity, img[index]);
         }
 
         max_intensity -= min_intensity;
-        double li = 10;
+        float li = 10;
 
-        double GI(double intensity)
+        float GI(float intensity)
         {
-            double lamda = 10;
-            double ret = Math.Exp(lamda * (1 - intensity / max_intensity) * (1 - intensity / max_intensity));
+            float lamda = 10;
+            float ret = (float)Math.Exp(lamda * (1 - intensity / max_intensity) * (1 - intensity / max_intensity));
             return ret;
         }
 
@@ -82,6 +89,8 @@ public class VirutalFinger
         foreach (var marker in subMarkers)
         {
             int index = (int)marker.position.z * sz01 + (int)marker.position.y * sz0 + (int)marker.position.x;
+            //Debug.Log(index);
+            //Debug.Log(marker.position);
             phi[index] = 0;
             state[index] = States.ALIVE;
             HeapElemX elem = new HeapElemX(index, 0);
@@ -110,7 +119,7 @@ public class VirutalFinger
             if (tarSet.Contains(min_index))
             {
                 stop_index = min_index;
-                Debug.Log("aaaqa");
+                Debug.Log("aaaaa");
                 break;
             }
 
@@ -134,10 +143,10 @@ public class VirutalFinger
                         int offset = Math.Abs(offset_i) + Math.Abs(offset_j) + Math.Abs(offset_k);
                         if (offset == 0 || offset > cnn_type) continue;
                         int index = d * sz01 + h * sz0 + w;
-                        double factor = (offset == 1) ? 1.0 : ((offset == 2) ? 1.414214 : ((offset == 3) ? 1.732051 : 0.0));
+                        float factor = (offset == 1) ? 1.0f : ((offset == 2) ? 1.414214f : ((offset == 3) ? 1.732051f : 0.0f));
                         if (state[index] != States.ALIVE)
                         {
-                            double new_dist = phi[min_index] + (GI(img[index]) + GI(img[min_index])) * factor * 0.5;
+                            float new_dist = phi[min_index] + (GI(img[index]) + GI(img[min_index])) * factor * 0.5f;
                             int prev_index = min_index;
                             if(state[index] == States.FAR)
                             {
@@ -197,7 +206,7 @@ public class VirutalFinger
     public static List<Marker> Get_Disk_Markers(Marker marker, Vector3 direction, int radius = 5)
     {
         Debug.Log("circle center" + marker.position);
-        createCircle(marker.position, direction, radius);
+        //createCircle(marker.position, direction, radius);
 
         Vector3 a = Vector3.Cross(Vector3.forward, direction);
         if (a == Vector3.zero)

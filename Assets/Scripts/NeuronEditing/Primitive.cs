@@ -95,7 +95,8 @@ public class Primitive
 
     public static GameObject CreateCylinder(Marker marker,Vector3 scale, Transform parentTransform)
     {
-        Vector3 positionA = new Vector3(marker.position.x * scale.x, marker.position.y * scale.y, marker.position.z * scale.z) - new Vector3(0.5f, 0.5f, 0.5f);
+		if (marker.parent == null) return null;
+		Vector3 positionA = new Vector3(marker.position.x * scale.x, marker.position.y * scale.y, marker.position.z * scale.z) - new Vector3(0.5f, 0.5f, 0.5f);
         float radiusA = marker.radius * Mathf.Max(scale.x, Mathf.Max(scale.y, scale.z));
 
 		var parent = marker.parent;

@@ -327,7 +327,7 @@ Transform:
   m_GameObject: {fileID: 96922833}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2.44, y: 2.12, z: 0.15}
+  m_LocalScale: {x: 2.048, y: 2.048, z: 0.14}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 532495645}
@@ -803,6 +803,37 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 15
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &749803855
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 749803856}
+  m_Layer: 0
+  m_Name: PaintingTrack
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &749803856
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 749803855}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -9.653299, y: 8.231349, z: -4.019268}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 17
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &809086223
 GameObject:
   m_ObjectHideFlags: 0
@@ -1149,9 +1180,12 @@ MonoBehaviour:
   CreatedCylinderMaterial: {fileID: 2100000, guid: 0906e541ba54071489b1787952e85f88, type: 2}
   ChosenMaterial: {fileID: 2100000, guid: aaf3b7b93aa458d4f91e1463c7d04c13, type: 2}
   chosenObject: {fileID: 0}
-  volume: {fileID: 0}
+  volume: {fileID: 11700000, guid: 17e07913b87d0664984ed075d6d878da, type: 2}
   Dims: {x: 512, y: 512, z: 512}
-  state: 0
+  state: 4
+  paintingTrack: {fileID: 749803855}
+  bkgThreshold: 10
+  cubeTransform: {fileID: 96922838}
 --- !u!4 &1076769395
 Transform:
   m_ObjectHideFlags: 0
@@ -1744,7 +1778,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1897691021
 MonoBehaviour:
   m_ObjectHideFlags: 0
