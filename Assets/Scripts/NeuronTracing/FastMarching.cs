@@ -718,14 +718,23 @@ public class FastMarching
         max_intensity = 0;
         min_intensity = double.MaxValue;
 
-        for (int i = 0; i < tol_sz; i++)
+        Parallel.For(0, tol_sz, i =>
         {
             phi[i] = float.MaxValue;
             parent[i] = i;  // each pixel point to itself at the         statements beginning
             state[i] = States.FAR;
             max_intensity = Math.Max(max_intensity, gsdt[i]);
             min_intensity = Math.Min(min_intensity, gsdt[i]);
-        }
+        });
+
+        //for (int i = 0; i < tol_sz; i++)
+        //{
+        //    phi[i] = float.MaxValue;
+        //    parent[i] = i;  // each pixel point to itself at the         statements beginning
+        //    state[i] = States.FAR;
+        //    max_intensity = Math.Max(max_intensity, gsdt[i]);
+        //    min_intensity = Math.Min(min_intensity, gsdt[i]);
+        //}
 
         max_intensity -= min_intensity;
         double li = 10;
@@ -1345,10 +1354,7 @@ public class FastMarching
             if (voxelSet.Count < 3) continue;
 
             //trace back to trunk
-            if (heap.elems.Count == 0)
-            {
                 SearchCluster(voxelSet, branchElem, -1, root, new Vector3Int(sz0, sz1, sz2), new Vector3Int(o_width, o_height, o_depth), searchSet, results, target_set, heap, elems, connection, bkg_thresh);
-            }
 
             (Vector3 direction, Vector3 maximum_pos, Vector3 minimum_pos) = PCA(voxelSet, new Vector3Int(sz0, sz1, sz2), new Vector3Int(o_width, o_height, o_depth));
             Vector3 a = Vector3.Cross(Vector3.forward, direction);
@@ -1361,12 +1367,12 @@ public class FastMarching
             //if (heap.elems.Count > 0)
             //{
             //    ////计算另一个方向
-            //    SearchCluster(minimum_pos, -direction, serachLength, gsdt, phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
+                SearchCluster(minimum_pos, -direction, serachLength, gsdt, phi, searchSet, results, target_set, heap, elems, connection, bkg_thresh);
 
             //}
             //else
             //{
-            //    SearchCluster(maximum_pos, direction, serachLength, gsdt, phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
+                SearchCluster(maximum_pos, direction, serachLength, gsdt, phi, searchSet, results, target_set, heap, elems, connection, bkg_thresh);
 
             //}
             //PCA
@@ -1719,7 +1725,7 @@ public class FastMarching
     }
 
     //pca
-    private void SearchCluster(Vector3 baseVoxel, Vector3 direction, int searchLength, float[] gsdt, float[] phi, HashSet<int> searchSet, HashSet<int> results, HashSet<int> trunk, SortedSet<int> target_set, Heap<HeapElemX> heap, Dictionary<int, HeapElemX> elems, Dictionary<int, int> connection, int bkg_thresh)
+    private void SearchCluster(Vector3 baseVoxel, Vector3 direction, int searchLength, float[] gsdt, float[] phi, HashSet<int> searchSet, HashSet<int> results, SortedSet<int> target_set, Heap<HeapElemX> heap, Dictionary<int, HeapElemX> elems, Dictionary<int, int> connection, int bkg_thresh)
     {
         Vector3 a = Vector3.Cross(Vector3.forward, direction);
         if (a == Vector3.zero)
@@ -1755,8 +1761,6 @@ public class FastMarching
                                 //var tmpVoxels = findSubVoxels(tmp_index, results, sz0, sz1, sz2);
                                 //if (tmpVoxels.Count < 10) continue;
                                 target_set.Add(tmp_index);
-                                connection[base_index] = tmp_index;
-                                connection[tmp_index] = base_index;
                                 is_break = true;
                             }
                             //连接非连通区域

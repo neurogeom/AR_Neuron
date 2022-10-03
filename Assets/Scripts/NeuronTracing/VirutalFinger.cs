@@ -61,16 +61,26 @@ public class VirutalFinger
         float[] phi = new float[tol_sz];
         States[] state = new States[tol_sz];
         int[] parent = new int[tol_sz];
-        float max_intensity = 0;
-        float min_intensity = float.MaxValue;
-        for (int index= 0; index < tol_sz; index++)
+        float max_intensity = bkg_thresh;
+        float min_intensity = 255;
+        //for (int index= 0; index < tol_sz; index++)
+        //{
+        //    parent[index] = index;
+        //    phi[index] = float.MaxValue;
+        //    state[index] = States.FAR;
+        //    max_intensity = Math.Max(max_intensity, img[index]);
+        //    min_intensity = Math.Min(min_intensity, img[index]);
+        //}
+
+        Parallel.For(0, tol_sz, index =>
         {
             parent[index] = index;
             phi[index] = float.MaxValue;
             state[index] = States.FAR;
             max_intensity = Math.Max(max_intensity, img[index]);
             min_intensity = Math.Min(min_intensity, img[index]);
-        }
+        });
+
 
         max_intensity -= min_intensity;
         float li = 10;

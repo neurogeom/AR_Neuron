@@ -49,7 +49,6 @@ public class IndexTipTrackScript : MonoBehaviour
     private GameObject repairVectorCylinder;
     [SerializeField] Texture3D volume;
 
-    public Vector3 Dims = new Vector3(512, 512, 512);
     public enum States { Selecting = 0, Drawing = 1, Reparing = 2, Waiting = 3, Drawing_2 = 4 };
     [SerializeField] public States state;
 
@@ -324,7 +323,7 @@ public class IndexTipTrackScript : MonoBehaviour
                         IsContinuous = false;
                         Vector3 pos = repairSeed.position;
                         pos += new Vector3(0.5f, 0.5f, 0.5f);
-                        pos = new Vector3(pos.x * Dims.x, pos.y * Dims.y, pos.z * Dims.z);
+                        //pos = new Vector3(pos.x * Dims.x, pos.y * Dims.y, pos.z * Dims.z);
                         Marker repairMarker = new Marker(pos);
                         Vector3 repairDirection = RightIndexTipPosition - repairSeed.sphere.transform.position;
                         repairDirection = PaintingBoardTransform.InverseTransformDirection(repairDirection).normalized;

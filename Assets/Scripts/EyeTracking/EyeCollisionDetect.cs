@@ -161,16 +161,30 @@ public class EyeCollisionDetect : MonoBehaviour
             int x = (int)(p.x * sz0);
             int y = (int)(p.y * sz1);
             int z = (int)(p.z * sz2);
-            if (x >= 0 && x < sz0 && y >= 0 && y < sz1 && z >= 0 && z < sz2)
+            int offset = 1;
+            for(int offsetX = -offset; offsetX <= offset; offsetX++)
             {
-                int index = x + (y * sz0) + (z * sz0 * sz1);
-                byte intesity = volumeData[index];
-                if (intesity > max_intensity)
+                for (int offsetY = -offset; offsetY <= offset; offsetY++)
                 {
-                    max_intensity = intesity;
-                    max_index = index;
+                    for (int offsetZ = -offset; offsetZ <= offset; offsetZ++)
+                    {
+                        int w = x + offsetX;
+                        int h = y + offsetY;
+                        int d = z + offsetZ;
+                        if (w >= 0 && w < sz0 && h >= 0 && h < sz1 && d >= 0 && d < sz2)
+                        {
+                            int index = w + (h * sz0) + (d * sz0 * sz1);
+                            byte intesity = volumeData[index];
+                            if (intesity > max_intensity)
+                            {
+                                max_intensity = intesity;
+                                max_index = index;
+                            }
+                        }
+                    }
                 }
             }
+
             p += direction * dt;
             distance += dt;
             if (distance > max_length) break;

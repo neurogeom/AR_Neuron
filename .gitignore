@@ -2,6 +2,7 @@ Library
 Logs
 obj
 Assets/Textures
+Assets/Packages
 .vs
 *.vsconfig
 *.config

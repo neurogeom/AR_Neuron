@@ -1180,8 +1180,7 @@ MonoBehaviour:
   CreatedCylinderMaterial: {fileID: 2100000, guid: 0906e541ba54071489b1787952e85f88, type: 2}
   ChosenMaterial: {fileID: 2100000, guid: aaf3b7b93aa458d4f91e1463c7d04c13, type: 2}
   chosenObject: {fileID: 0}
-  volume: {fileID: 11700000, guid: 17e07913b87d0664984ed075d6d878da, type: 2}
-  Dims: {x: 512, y: 512, z: 512}
+  volume: {fileID: 11700000, guid: e2873273dfda1e845a30615b4dc21790, type: 2}
   state: 4
   paintingTrack: {fileID: 749803855}
   bkgThreshold: 10
@@ -1793,11 +1792,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   isMsfm: 1
   bkg_thresh: 10
-  volume: {fileID: 11700000, guid: 17e07913b87d0664984ed075d6d878da, type: 2}
+  volume: {fileID: 11700000, guid: c2bd6a418d0eaef48b9a34d70781ef03, type: 2}
   seed: {fileID: 1499450323}
   cube: {fileID: 96922833}
   PaintingBoard: {fileID: 532495643}
-  occupancy: {fileID: 11700000, guid: 4461f3f050ed191429df9abd6e9a9d14, type: 2}
+  occupancy: {fileID: 11700000, guid: e2873273dfda1e845a30615b4dc21790, type: 2}
   targets: 
 --- !u!4 &1897691022
 Transform:
@@ -1889,7 +1888,7 @@ MonoBehaviour:
   paintingBoard: {fileID: 96922833}
   bkgThresh: 10
   isRepairing: 0
-  volume: {fileID: 11700000, guid: 17e07913b87d0664984ed075d6d878da, type: 2}
+  volume: {fileID: 11700000, guid: c2bd6a418d0eaef48b9a34d70781ef03, type: 2}
   app2: {fileID: 1897691021}
 --- !u!4 &1948615979
 Transform:
