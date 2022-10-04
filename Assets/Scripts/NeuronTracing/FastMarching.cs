@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using MathNet.Numerics.LinearAlgebra.Double;
 using UnityEditor;
+using MathNet.Numerics.LinearAlgebra.Solvers;
 
 public class FastMarching
 {
@@ -837,239 +838,168 @@ public class FastMarching
         }
         Debug.Log("fast Marching done");
 
-        //gsdt_float = new byte[gsdt.Length];
-        //Texture3D texture3D = new Texture3D(sz0, sz1, sz2, TextureFormat.R8, false);
-        //texture3D.wrapMode = TextureWrapMode.Clamp;
-        //for (int i = 0; i < gsdt.Length; i++)
-        //{
-        //    //gsdt[i] = (float)(gsdt[i] / maximum);
-        //    if (state[i] == States.ALIVE)
-        //    {
-        //        gsdt_float[i] = 255;
-        //    }
-        //    else gsdt_float[i] = 0;
-        //}
-        //texture3D.SetPixelData(gsdt_float, 0);
-        //texture3D.Apply();
-        //AssetDatabase.DeleteAsset("Assets/Textures/" + "initial" + ".Asset");
-        //AssetDatabase.CreateAsset(texture3D, "Assets/Textures/" + "initial" + ".Asset");
-        //AssetDatabase.SaveAssets();
-        //AssetDatabase.Refresh();
+        {
+            //gsdt_float = new byte[gsdt.Length];
+            //Texture3D texture3D = new Texture3D(sz0, sz1, sz2, TextureFormat.R8, false);
+            //texture3D.wrapMode = TextureWrapMode.Clamp;
+            //for (int i = 0; i < gsdt.Length; i++)
+            //{
+            //    //gsdt[i] = (float)(gsdt[i] / maximum);
+            //    if (state[i] == States.ALIVE)
+            //    {
+            //        gsdt_float[i] = 255;
+            //    }
+            //    else gsdt_float[i] = 0;
+            //}
+            //texture3D.SetPixelData(gsdt_float, 0);
+            //texture3D.Apply();
+            //AssetDatabase.DeleteAsset("Assets/Textures/" + "initial" + ".Asset");
+            //AssetDatabase.CreateAsset(texture3D, "Assets/Textures/" + "initial" + ".Asset");
+            //AssetDatabase.SaveAssets();
+            //AssetDatabase.Refresh();
+        }
 
         HashSet<int> searchSet = new HashSet<int>();
         Dictionary<int, int> connection = new Dictionary<int, int>();
         while (target_set.Count > 0)
         {
             float min_dis = float.MaxValue;
+
             int target_index = target_set.Last();
+            //createSphere(IndexToVector(target_index), new Vector3Int(sz0, sz1, sz2), Color.cyan, 0.05f);
 
             //int target_index = target_set.First();
             target_set.Remove(target_index);
-            HashSet<Vector3> voxelSet = findSubVoxels(target_index, gsdt, searchSet, results, sz0, sz1, sz2, bkg_thresh);
+            HashSet<Vector3> voxelSet = findSubVoxels(target_index, gsdt, searchSet, target_set, results, sz0, sz1, sz2, bkg_thresh);
+
             if (voxelSet.Count < 3) continue;
-            //(Vector3 direction, Vector3 cltAvg) = PCA(voxelSet, sz01, sz0);
-            //Debug.Log(maximum_pos + " " + minimum_pos);
 
-            /*
-            //WPCA
-            //var volxelList = voxelSet.ToList<Vector3>();
-            //double[,] weightArr = new double[volxelList.Count, 3];
-            //double[,] varArr = new double[volxelList.Count, 3];
-            //for (int i = 0; i < volxelList.Count; i++)
-            //{
-            //    int tmp_index = (int)(volxelList[i].z * sz01 + volxelList[i].y * sz0 + volxelList[i].x);
-            //    double weight = gsdt[tmp_index];
-            //    weightArr[i, 0] = weight;
-            //    weightArr[i, 1] = weight;
-            //    weightArr[i, 2] = weight;
-            //    varArr[i, 0] = volxelList[i].x;
-            //    varArr[i, 1] = volxelList[i].y;
-            //    varArr[i, 2] = volxelList[i].z;
-            //}
-            //NDarray X = np.array(varArr);
-            //NDarray W = np.array(weightArr);
-            //var wx_sum = np.einsum("ij,ij->j", X, W);
-            ////Debug.Log(wx_sum);
-            ////Debug.Log(np.sum(W, 0));
-            //var mean = wx_sum / np.sum(W, 0);
-            //X -= mean;
-            //X *= W;
+            //trace back to trunk
+            SearchCluster(voxelSet, -1, root, new Vector3Int(sz0, sz1, sz2), new Vector3Int(o_width, o_height, o_depth), searchSet, results, target_set, heap, elems, connection, bkg_thresh);
 
-            //var covar = np.dot(X.T, X);
-            //covar /= np.dot(W.T, W);
-            //covar[np.isnan(covar)] = (NDarray)0;
-            ////Debug.Log(covar);
-            ////if self.xi != 0:
-            ////Ws = weights.sum(0)
-            ////covar *= np.outer(Ws, Ws) * *self.xi
+            Debug.Log(heap.elems.Count);
+            (Vector3 direction, Vector3 maximum_pos, Vector3 minimum_pos) = PCA(voxelSet, new Vector3Int(sz0, sz1, sz2), new Vector3Int(o_width, o_height, o_depth));
 
+            int serachLength = 25;
+            SearchCluster(minimum_pos, -direction, serachLength, gsdt, searchSet, results, target_set, bkg_thresh);
+            SearchCluster(maximum_pos, direction, serachLength, gsdt, searchSet, results, target_set, bkg_thresh);
+            Debug.Log("target_set count befor heap:" + target_set.Count);
 
-            //var eigvals = (X.shape[1] - 3, X.shape[1] - 1);
-            //(NDarray evals, NDarray evecs) = np.linalg.eig(covar);
-            //var components_ = evecs.T;
-            //var explained_variance_ = np.flipud(evals);
-            //var explained_variance_ratio_ = np.flipud(evals) / covar.trace();
-
-            //NDarray wpca_vec;
-            //if (Math.Abs((double)evals[0]) > Math.Abs((double)evals[1]) && Math.Abs((double)evals[0]) > Math.Abs((double)evals[2])) wpca_vec = evecs[0];
-            //else if (Math.Abs((double)evals[1]) > Math.Abs((double)evals[0]) && Math.Abs((double)evals[1]) > Math.Abs((double)evals[2])) wpca_vec = evecs[1];
-            //else wpca_vec = evecs[2];
-            //Debug.Log(evals);
-            //Debug.Log(evecs);
-            //Debug.Log(wpca_vec);
-
-            //Vector3 wpca_direction = new Vector3((float)wpca_vec[0], (float)wpca_vec[1], (float)wpca_vec[2]).normalized;
-            //Vector3 wpca_position = new Vector3((float)mean[0], (float)mean[1], (float)mean[2]) / 512.0f - new Vector3(0.5f, 0.5f, 0.5f);
-            //Debug.Log(direction + " " + wpca_position);
-            //var trans = GameObject.Find("PaintingBoard").transform;
-            //var wpca_sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            //wpca_direction = trans.TransformDirection(wpca_direction);
-            //wpca_sphere.transform.position = trans.TransformPoint(wpca_position);
-            //wpca_sphere.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
-            //Debug.DrawLine(wpca_sphere.transform.position, wpca_sphere.transform.position + wpca_direction * 0.25f, Color.red, 1000);
-            */
-            //createCircle(marker.position, direction, radius);
-
-
-            //PCA
-            //(Vector3 direction, Vector3 maximum_pos, Vector3 minimum_pos) = PCA(voxelSet, sz0, sz1, sz2);
-            //Vector3 a = Vector3.Cross(Vector3.forward, direction);
-            //if (a == Vector3.zero)
-            //{
-            //    a = Vector3.Cross(Vector3.up, direction).normalized;
-            //}
-            //Vector3 b = Vector3.Cross(a, direction).normalized;
-            //int serachLength = 20;
-
-            //HashSet<int> trunk = new HashSet<int>();
-            ////计算第一个方向
-            //SearchCluster(maximum_pos, direction, 25, gsdt, phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
-
-            ////计算另一个方向
-            //SearchCluster(minimum_pos, -direction, 25, gsdt, phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
-
-            //(direction, maximum_pos, minimum_pos) = ParentDir(voxelSet, sz01, sz0, new Vector3Int(sz0, sz1, sz2), new Vector3Int(o_width, o_height, o_depth));
-            //SearchCluster(maximum_pos, direction, 25, gsdt, phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
-
-            ////计算另一个方向
-            //SearchCluster(minimum_pos, -direction, 25, sz0, sz1, sz2, gsdt, phi, searchSet, results,  trunk, target_set, heap, elems, connection, bkg_thresh);
-
-        }
-        Debug.Log("==========done" + heap.elems.Count);
-
-        while (!heap.empty())
-        {
-            HeapElemX min_elem = heap.delete_min();
-            elems.Remove(min_elem.img_index);
-            results.Add(min_elem.img_index);
-
-            //insert target
-            if (target_set.Contains(min_elem.img_index)) target_set.Remove(min_elem.img_index);
-
-            int min_index = min_elem.img_index;
-
-            parent[min_index] = min_elem.prev_index;
-
-            state[min_index] = States.ALIVE;
-
-            int i = (int)(min_index % sz0);
-            int j = (int)((min_index / sz0) % sz1);
-            int k = (int)((min_index / sz01) % sz2);
-
-            int w, h, d;
-            for (int ii = -1; ii <= 1; ii++)
+            while (!heap.empty())
             {
-                w = i + ii;
-                if (w < 0 || w >= sz0) continue;
-                for (int jj = -1; jj <= 1; jj++)
+                HeapElemX min_elem = heap.delete_min();
+                elems.Remove(min_elem.img_index);
+                results.Add(min_elem.img_index);
+
+                //insert target
+                if (target_set.Contains(min_elem.img_index)) target_set.Remove(min_elem.img_index);
+
+                int min_index = min_elem.img_index;
+
+                parent[min_index] = min_elem.prev_index;
+
+                state[min_index] = States.ALIVE;
+
+                int i = (int)(min_index % sz0);
+                int j = (int)((min_index / sz0) % sz1);
+                int k = (int)((min_index / sz01) % sz2);
+
+                int w, h, d;
+                for (int ii = -1; ii <= 1; ii++)
                 {
-                    h = j + jj;
-                    if (h < 0 || h >= sz1) continue;
-                    for (int kk = -1; kk <= 1; kk++)
+                    w = i + ii;
+                    if (w < 0 || w >= sz0) continue;
+                    for (int jj = -1; jj <= 1; jj++)
                     {
-                        d = k + kk;
-                        if (d < 0 || d >= sz2) continue;
-                        int offset = Math.Abs(ii) + Math.Abs(jj) + Math.Abs(kk);
-                        if (offset == 0 || offset > cnn_type) continue;
-                        double factor = (offset == 1) ? 1.0 : ((offset == 2) ? 1.414214 : ((offset == 3) ? 1.732051 : 0.0));
-                        int index = d * sz01 + h * sz0 + w;
-                        int marker_distance = (int)Vector3.Distance(root.position, new Vector3(w, h, d));
-                        //double true_thresh;
-                        //true_thresh = marker_distance <= 50 ? higher_thresh : bkg_thresh;
-                        if (is_break_accept)
+                        h = j + jj;
+                        if (h < 0 || h >= sz1) continue;
+                        for (int kk = -1; kk <= 1; kk++)
                         {
-
-                            if (gsdt[index] < bkg_thresh && gsdt[min_index] < bkg_thresh) continue;
-                        }
-                        else
-                        {
-                            if (gsdt[index] < bkg_thresh) continue;
-                        }
-                        if (state[index] != States.ALIVE)
-                        {
-                            float new_dist = (float)(phi[min_index] + (GI(gsdt[index]) + GI(gsdt[min_index])) * factor * 0.5);
-                            int prev_index = min_index;
-
-                            if (state[index] == States.FAR)
+                            d = k + kk;
+                            if (d < 0 || d >= sz2) continue;
+                            int offset = Math.Abs(ii) + Math.Abs(jj) + Math.Abs(kk);
+                            if (offset == 0 || offset > cnn_type) continue;
+                            double factor = (offset == 1) ? 1.0 : ((offset == 2) ? 1.414214 : ((offset == 3) ? 1.732051 : 0.0));
+                            int index = d * sz01 + h * sz0 + w;
+                            int marker_distance = (int)Vector3.Distance(root.position, new Vector3(w, h, d));
+                            //double true_thresh;
+                            //true_thresh = marker_distance <= 50 ? higher_thresh : bkg_thresh;
+                            if (is_break_accept)
                             {
-                                phi[index] = new_dist;
-                                HeapElemX elem = new HeapElemX(index, phi[index]);
-                                elem.prev_index = prev_index;
-                                heap.insert(elem);
-                                elems[index] = elem;
-                                state[index] = States.TRIAL;
+
+                                if (gsdt[index] < bkg_thresh && gsdt[min_index] < bkg_thresh) continue;
                             }
-                            else if (state[index] == States.TRIAL)
+                            else
                             {
-                                if (phi[index] > new_dist)
+                                if (gsdt[index] < bkg_thresh) continue;
+                            }
+                            if (state[index] != States.ALIVE)
+                            {
+                                float new_dist = (float)(phi[min_index] + (GI(gsdt[index]) + GI(gsdt[min_index])) * factor * 0.5);
+                                int prev_index = min_index;
+
+                                if (state[index] == States.FAR)
                                 {
                                     phi[index] = new_dist;
-                                    HeapElemX elem = elems[index];
-                                    heap.adjust(elem.heap_id, phi[index]);
+                                    HeapElemX elem = new HeapElemX(index, phi[index]);
                                     elem.prev_index = prev_index;
+                                    heap.insert(elem);
+                                    elems[index] = elem;
+                                    state[index] = States.TRIAL;
+                                }
+                                else if (state[index] == States.TRIAL)
+                                {
+                                    if (phi[index] > new_dist)
+                                    {
+                                        phi[index] = new_dist;
+                                        HeapElemX elem = elems[index];
+                                        heap.adjust(elem.heap_id, phi[index]);
+                                        elem.prev_index = prev_index;
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            if (connection.ContainsKey(min_index))
-            {
-                //Debug.Log("connection works");
-                int index = connection[min_index];
-                w = (int)(min_index % sz0);
-                h = (int)((min_index / sz0) % sz1);
-                d = (int)((min_index / sz01) % sz2);
-                double factor = Vector3.Distance(new Vector3(i, j, k), new Vector3(w, h, d));
-                if (state[index] != States.ALIVE)
+                if (connection.ContainsKey(min_index))
                 {
-                    float new_dist = (float)(phi[min_index] + (GI(gsdt[index]) + GI(gsdt[min_index])) * factor * 0.5);
-                    int prev_index = min_index;
+                    //Debug.Log("connection works");
+                    int index = connection[min_index];
+                    w = (int)(min_index % sz0);
+                    h = (int)((min_index / sz0) % sz1);
+                    d = (int)((min_index / sz01) % sz2);
+                    double factor = Vector3.Distance(new Vector3(i, j, k), new Vector3(w, h, d));
+                    if (state[index] != States.ALIVE)
+                    {
+                        float new_dist = (float)(phi[min_index] + (GI(gsdt[index]) + GI(gsdt[min_index])) * factor * 0.5);
+                        int prev_index = min_index;
 
-                    if (state[index] == States.FAR)
-                    {
-                        phi[index] = new_dist;
-                        HeapElemX elem = new HeapElemX(index, phi[index]);
-                        elem.prev_index = prev_index;
-                        heap.insert(elem);
-                        elems[index] = elem;
-                        state[index] = States.TRIAL;
-                    }
-                    else if (state[index] == States.TRIAL)
-                    {
-                        if (phi[index] > new_dist)
+                        if (state[index] == States.FAR)
                         {
                             phi[index] = new_dist;
-                            HeapElemX elem = elems[index];
-                            heap.adjust(elem.heap_id, phi[index]);
+                            HeapElemX elem = new HeapElemX(index, phi[index]);
                             elem.prev_index = prev_index;
+                            heap.insert(elem);
+                            elems[index] = elem;
+                            state[index] = States.TRIAL;
+                        }
+                        else if (state[index] == States.TRIAL)
+                        {
+                            if (phi[index] > new_dist)
+                            {
+                                phi[index] = new_dist;
+                                HeapElemX elem = elems[index];
+                                heap.adjust(elem.heap_id, phi[index]);
+                                elem.prev_index = prev_index;
+                            }
                         }
                     }
                 }
             }
-        }
 
+            Debug.Log("target_set count befor heap:" + target_set.Count);
+        }
 
         //texture3D = new Texture3D(sz0, sz1, sz2, TextureFormat.R8, false);
         //texture3D.wrapMode = TextureWrapMode.Clamp;
@@ -1311,10 +1241,11 @@ public class FastMarching
             int z = (int)((index1 / sz01) % sz2);
             float distance_toseed_1 = Vector3.Distance(new Vector3(x, y, z), root.position);
 
-            x = (int)(index1 % sz0);
-            y = (int)((index1 / sz0) % sz1);
-            z = (int)((index1 / sz01) % sz2);
+            x = (int)(index2 % sz0);
+            y = (int)((index2 / sz0) % sz1);
+            z = (int)((index2 / sz01) % sz2);
             float distance_toseed_2 = Vector3.Distance(new Vector3(x, y, z), root.position);
+
             if (distance_toseed_1 < distance_toseed_2) return -1;
             else if (distance_toseed_1 == distance_toseed_2) return 0;
             else return 1;
@@ -1340,176 +1271,155 @@ public class FastMarching
         target_set.Add(targetIndex);
         HeapElemX branchElem = new HeapElemX(-1, -1);
         int iteration = 0;
+        int branchIndex = -1;
+        HashSet<int> addResults = new HashSet<int>();
         while (target_set.Count > 0)
         {
             Debug.Log("iteration:" + iteration++);
             float min_dis = float.MaxValue;
 
             int target_index = target_set.Last();
+            createSphere(IndexToVector(target_index), new Vector3Int(sz0, sz1, sz2), Color.cyan, 0.05f);
 
             //int target_index = target_set.First();
             target_set.Remove(target_index);
-            HashSet<Vector3> voxelSet = findSubVoxels(target_index, gsdt, searchSet, results, sz0, sz1, sz2, bkg_thresh);
+            HashSet<Vector3> voxelSet = findSubVoxels(target_index, gsdt, searchSet, target_set, results, sz0, sz1, sz2, bkg_thresh);
 
             if (voxelSet.Count < 3) continue;
 
             //trace back to trunk
-                SearchCluster(voxelSet, branchElem, -1, root, new Vector3Int(sz0, sz1, sz2), new Vector3Int(o_width, o_height, o_depth), searchSet, results, target_set, heap, elems, connection, bkg_thresh);
+            SearchCluster(voxelSet, branchElem, -1, root, new Vector3Int(sz0, sz1, sz2), new Vector3Int(o_width, o_height, o_depth), searchSet, results, addResults,target_set, heap, elems, connection, bkg_thresh);
 
             (Vector3 direction, Vector3 maximum_pos, Vector3 minimum_pos) = PCA(voxelSet, new Vector3Int(sz0, sz1, sz2), new Vector3Int(o_width, o_height, o_depth));
-            Vector3 a = Vector3.Cross(Vector3.forward, direction);
-            if (a == Vector3.zero)
-            {
-                a = Vector3.Cross(Vector3.up, direction).normalized;
-            }
-            Vector3 b = Vector3.Cross(a, direction).normalized;
             int serachLength = 25;
-            //if (heap.elems.Count > 0)
-            //{
-            //    ////计算另一个方向
-                SearchCluster(minimum_pos, -direction, serachLength, gsdt, phi, searchSet, results, target_set, heap, elems, connection, bkg_thresh);
+            SearchCluster(minimum_pos, -direction, serachLength, gsdt, searchSet, results, target_set, bkg_thresh);
+            SearchCluster(maximum_pos, direction, serachLength, gsdt, searchSet, results, target_set, bkg_thresh);
+            Debug.Log("target_set count befor heap:"+target_set.Count);
 
-            //}
-            //else
-            //{
-                SearchCluster(maximum_pos, direction, serachLength, gsdt, phi, searchSet, results, target_set, heap, elems, connection, bkg_thresh);
-
-            //}
-            //PCA
-
-            //(direction, maximum_pos, minimum_pos) = ParentDir(voxelSet, sz01, sz0, new Vector3Int(sz0, sz1, sz2), new Vector3Int(o_width, o_height, o_depth));
-            //SearchCluster(maximum_pos, direction, 25, sz0, sz1, sz2, gsdt, phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
-
-            ////计算另一个方向
-            //SearchCluster(minimum_pos, -direction, 25, sz0, sz1, sz2, gsdt, phi, searchSet, results, trunk, target_set, heap, elems, connection, bkg_thresh);
-
-        }
-
-        Debug.Log("==========done" + heap.elems.Count);
-
-        HashSet<int> addResults = new HashSet<int>();
-        int branchIndex = 0;
-        int branchParentIndex = 0;
-        foreach (var elem in heap.elems)
-        {
-            //Debug.Log(IndexToVector(elem.img_index));
-            createSphere(IndexToVector(elem.prev_index), new Vector3Int(sz0, sz1, sz2), Color.cyan);
-            branchIndex = elem.img_index;
-            branchParentIndex = elem.prev_index;
-        }
-
-        while (!heap.empty())
-        {
-            HeapElemX min_elem = heap.delete_min();
-            elems.Remove(min_elem.img_index);
-            addResults.Add(min_elem.img_index);
-
-            //insert target
-            if (target_set.Contains(min_elem.img_index)) target_set.Remove(min_elem.img_index);
-
-            int min_index = min_elem.img_index;
-
-            parent[min_index] = min_elem.prev_index;
-
-            state[min_index] = States.ALIVE;
-
-            int i = (int)(min_index % sz0);
-            int j = (int)((min_index / sz0) % sz1);
-            int k = (int)((min_index / sz01) % sz2);
-
-            int w, h, d;
-            for (int ii = -1; ii <= 1; ii++)
+            if (branchIndex == -1)
             {
-                w = i + ii;
-                if (w < 0 || w >= sz0) continue;
-                for (int jj = -1; jj <= 1; jj++)
+                branchIndex = heap.elems[0].img_index;
+                Debug.Log("branchIndex:" + branchIndex);
+            }
+
+            while (!heap.empty())
+            {
+                HeapElemX min_elem = heap.delete_min();
+                elems.Remove(min_elem.img_index);
+                addResults.Add(min_elem.img_index);
+
+                //insert target
+                if (target_set.Contains(min_elem.img_index)) target_set.Remove(min_elem.img_index);
+
+                int min_index = min_elem.img_index;
+
+                parent[min_index] = min_elem.prev_index;
+
+                state[min_index] = States.ALIVE;
+
+                int i = (int)(min_index % sz0);
+                int j = (int)((min_index / sz0) % sz1);
+                int k = (int)((min_index / sz01) % sz2);
+
+                int w, h, d;
+                for (int ii = -1; ii <= 1; ii++)
                 {
-                    h = j + jj;
-                    if (h < 0 || h >= sz1) continue;
-                    for (int kk = -1; kk <= 1; kk++)
+                    w = i + ii;
+                    if (w < 0 || w >= sz0) continue;
+                    for (int jj = -1; jj <= 1; jj++)
                     {
-                        d = k + kk;
-                        if (d < 0 || d >= sz2) continue;
-                        int offset = Math.Abs(ii) + Math.Abs(jj) + Math.Abs(kk);
-                        if (offset == 0 || offset > cnn_type) continue;
-                        double factor = (offset == 1) ? 1.0 : ((offset == 2) ? 1.414214 : ((offset == 3) ? 1.732051 : 0.0));
-                        int index = d * sz01 + h * sz0 + w;
-                        int marker_distance = (int)Vector3.Distance(root.position, new Vector3(w, h, d));
-                        //double true_thresh;
-                        //true_thresh = marker_distance <= 50 ? higher_thresh : bkg_thresh;
-                        if (is_break_accept)
+                        h = j + jj;
+                        if (h < 0 || h >= sz1) continue;
+                        for (int kk = -1; kk <= 1; kk++)
                         {
-
-                            if (gsdt[index] < bkg_thresh && gsdt[min_index] < bkg_thresh) continue;
-                        }
-                        else
-                        {
-                            if (gsdt[index] < bkg_thresh) continue;
-                        }
-                        if (state[index] != States.ALIVE)
-                        {
-                            float new_dist = (float)(phi[min_index] + (GI(gsdt[index]) + GI(gsdt[min_index])) * factor * 0.5);
-                            int prev_index = min_index;
-
-                            if (state[index] == States.FAR)
+                            d = k + kk;
+                            if (d < 0 || d >= sz2) continue;
+                            int offset = Math.Abs(ii) + Math.Abs(jj) + Math.Abs(kk);
+                            if (offset == 0 || offset > cnn_type) continue;
+                            double factor = (offset == 1) ? 1.0 : ((offset == 2) ? 1.414214 : ((offset == 3) ? 1.732051 : 0.0));
+                            int index = d * sz01 + h * sz0 + w;
+                            int marker_distance = (int)Vector3.Distance(root.position, new Vector3(w, h, d));
+                            //double true_thresh;
+                            //true_thresh = marker_distance <= 50 ? higher_thresh : bkg_thresh;
+                            if (is_break_accept)
                             {
-                                phi[index] = new_dist;
-                                HeapElemX elem = new HeapElemX(index, phi[index]);
-                                elem.prev_index = prev_index;
-                                heap.insert(elem);
-                                elems[index] = elem;
-                                state[index] = States.TRIAL;
+
+                                if (gsdt[index] < bkg_thresh && gsdt[min_index] < bkg_thresh) continue;
                             }
-                            else if (state[index] == States.TRIAL)
+                            else
                             {
-                                if (phi[index] > new_dist)
+                                if (gsdt[index] < bkg_thresh) continue;
+                            }
+                            if (state[index] != States.ALIVE)
+                            {
+                                float new_dist = (float)(phi[min_index] + (GI(gsdt[index]) + GI(gsdt[min_index])) * factor * 0.5);
+                                int prev_index = min_index;
+
+                                if (state[index] == States.FAR)
                                 {
                                     phi[index] = new_dist;
-                                    HeapElemX elem = elems[index];
-                                    heap.adjust(elem.heap_id, phi[index]);
+                                    HeapElemX elem = new HeapElemX(index, phi[index]);
                                     elem.prev_index = prev_index;
+                                    heap.insert(elem);
+                                    elems[index] = elem;
+                                    state[index] = States.TRIAL;
+                                }
+                                else if (state[index] == States.TRIAL)
+                                {
+                                    if (phi[index] > new_dist)
+                                    {
+                                        phi[index] = new_dist;
+                                        HeapElemX elem = elems[index];
+                                        heap.adjust(elem.heap_id, phi[index]);
+                                        elem.prev_index = prev_index;
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            if (connection.ContainsKey(min_index))
-            {
-                //Debug.Log("connection works");
-                int index = connection[min_index];
-                w = (int)(min_index % sz0);
-                h = (int)((min_index / sz0) % sz1);
-                d = (int)((min_index / sz01) % sz2);
-                double factor = Vector3.Distance(new Vector3(i, j, k), new Vector3(w, h, d));
-                if (state[index] != States.ALIVE)
+                if (connection.ContainsKey(min_index))
                 {
-                    float new_dist = (float)(phi[min_index] + (GI(gsdt[index]) + GI(gsdt[min_index])) * factor * 0.5);
-                    int prev_index = min_index;
+                    //Debug.Log("connection works");
+                    int index = connection[min_index];
+                    w = (int)(min_index % sz0);
+                    h = (int)((min_index / sz0) % sz1);
+                    d = (int)((min_index / sz01) % sz2);
+                    double factor = Vector3.Distance(new Vector3(i, j, k), new Vector3(w, h, d));
+                    if (state[index] != States.ALIVE)
+                    {
+                        float new_dist = (float)(phi[min_index] + (GI(gsdt[index]) + GI(gsdt[min_index])) * factor * 0.5);
+                        int prev_index = min_index;
 
-                    if (state[index] == States.FAR)
-                    {
-                        phi[index] = new_dist;
-                        HeapElemX elem = new HeapElemX(index, phi[index]);
-                        elem.prev_index = prev_index;
-                        heap.insert(elem);
-                        elems[index] = elem;
-                        state[index] = States.TRIAL;
-                    }
-                    else if (state[index] == States.TRIAL)
-                    {
-                        if (phi[index] > new_dist)
+                        if (state[index] == States.FAR)
                         {
                             phi[index] = new_dist;
-                            HeapElemX elem = elems[index];
-                            heap.adjust(elem.heap_id, phi[index]);
+                            HeapElemX elem = new HeapElemX(index, phi[index]);
                             elem.prev_index = prev_index;
+                            heap.insert(elem);
+                            elems[index] = elem;
+                            state[index] = States.TRIAL;
+                        }
+                        else if (state[index] == States.TRIAL)
+                        {
+                            if (phi[index] > new_dist)
+                            {
+                                phi[index] = new_dist;
+                                HeapElemX elem = elems[index];
+                                heap.adjust(elem.heap_id, phi[index]);
+                                elem.prev_index = prev_index;
+                            }
                         }
                     }
                 }
             }
+            branchElem = new HeapElemX(-1, -1);
+
+            Debug.Log("target_set count befor heap:" + target_set.Count);
         }
+
+        Debug.Log("==========done" + heap.elems.Count);
 
         //Texture3D texture3D = new Texture3D(sz0, sz1, sz2, TextureFormat.R8, false);
         //texture3D.wrapMode = TextureWrapMode.Clamp;
@@ -1580,8 +1490,6 @@ public class FastMarching
         }
 
         Debug.Log("branch count:" + branch.Count);
-        Debug.Log(results.Count);
-
         Debug.Log("Results count:" + results.Count);
         Debug.Log("repair done");
         return branch;
@@ -1595,7 +1503,7 @@ public class FastMarching
         return ret;
     }
 
-    private HashSet<Vector3> findSubVoxels(int index, float[] gsdt, HashSet<int> searchSet, HashSet<int> results, int sz0, int sz1, int sz2, int bkg_thresh = 30)
+    private HashSet<Vector3> findSubVoxels(int index, float[] gsdt, HashSet<int> searchSet, SortedSet<int> targetSet, HashSet<int> results, int sz0, int sz1, int sz2, int bkg_thresh = 30)
     {
         int sz01 = sz0 * sz1;
         HashSet<Vector3> tmpClt = new HashSet<Vector3>();
@@ -1626,6 +1534,7 @@ public class FastMarching
                         {
                             searchSet.Add(tmp_index);
                             voxelList.Enqueue(new Vector3(i, j, k));
+                            targetSet.Remove(tmp_index);
                         }
                     }
                 }
@@ -1725,7 +1634,7 @@ public class FastMarching
     }
 
     //pca
-    private void SearchCluster(Vector3 baseVoxel, Vector3 direction, int searchLength, float[] gsdt, float[] phi, HashSet<int> searchSet, HashSet<int> results, SortedSet<int> target_set, Heap<HeapElemX> heap, Dictionary<int, HeapElemX> elems, Dictionary<int, int> connection, int bkg_thresh)
+    private void SearchCluster(Vector3 baseVoxel, Vector3 direction, int searchLength, float[] gsdt, HashSet<int> searchSet, HashSet<int> results, SortedSet<int> target_set, int bkg_thresh)
     {
         Vector3 a = Vector3.Cross(Vector3.forward, direction);
         if (a == Vector3.zero)
@@ -1761,7 +1670,8 @@ public class FastMarching
                                 //var tmpVoxels = findSubVoxels(tmp_index, results, sz0, sz1, sz2);
                                 //if (tmpVoxels.Count < 10) continue;
                                 target_set.Add(tmp_index);
-                                is_break = true;
+                                createSphere(IndexToVector(tmp_index), new Vector3Int(sz0, sz1, sz2), Color.cyan, 0.02f);
+                                //is_break = true;
                             }
                             //连接非连通区域
                         }
@@ -1770,6 +1680,7 @@ public class FastMarching
             }
         }
     }
+
 
     private (Vector3, Vector3, Vector3) ParentDir(HashSet<Vector3> voxelSet, int sz01, int sz0, Vector3Int volumeDim, Vector3Int occupancyDim)
     {
@@ -1847,7 +1758,7 @@ public class FastMarching
         return (direction2, maximum_pos, minimum_pos);
     }
 
-    private void SearchCluster(HashSet<Vector3> voxelSet, HeapElemX elem, int sourceIndex, Marker root, Vector3Int vDim, Vector3Int oDim, HashSet<int> searchSet, HashSet<int> results, SortedSet<int> target_set, Heap<HeapElemX> heap, Dictionary<int, HeapElemX> elems, Dictionary<int, int> connection, int bkg_thresh)
+    private void SearchCluster(HashSet<Vector3> voxelSet, HeapElemX elem, int sourceIndex, Marker root, Vector3Int vDim, Vector3Int oDim, HashSet<int> searchSet, HashSet<int> results, HashSet<int> addResults,SortedSet<int> target_set, Heap<HeapElemX> heap, Dictionary<int, HeapElemX> elems, Dictionary<int, int> connection, int bkg_thresh)
     {
         int blockSize = vDim.x / oDim.x;
         Vector3 baseVoxel = Vector3.zero;
@@ -1891,7 +1802,7 @@ public class FastMarching
         occupancyBaseVoxel.y = baseVoxel.y / vDim.y * oDim.y;
         occupancyBaseVoxel.z = baseVoxel.z / vDim.z * oDim.z;
         //Debug.Log(occupancyBaseVoxel);
-        createSphere(occupancyBaseVoxel, oDim, Color.blue);
+        //createSphere(occupancyBaseVoxel, oDim, Color.blue);
         int index_oc = ((int)occupancyBaseVoxel.x + (int)occupancyBaseVoxel.y * oDim.x + (int)occupancyBaseVoxel.z * oDim.y * oDim.x);
 
         int parentOccupancyIndex = parent_oc[index_oc];
@@ -1903,7 +1814,7 @@ public class FastMarching
         createSphere(parentBasePos, vDim, Color.blue);
         int searchTimes = 0;
         bool is_break = false;
-        while (searchTimes < 25 && !is_break)
+        while (searchTimes < 20 && !is_break)
         {
             for (int i = -2; i < blockSize && !is_break; i++)
             {
@@ -1917,7 +1828,7 @@ public class FastMarching
                             int tmpIndex = VectorToIndex(tmp);
                             if (gsdt[tmpIndex] >= bkg_thresh)
                             {
-                                if (elem.img_index == -1 && results.Contains(tmpIndex))
+                                if (elem.img_index == -1 && (results.Contains(tmpIndex)||addResults.Contains(tmpIndex)))
                                 {
                                     Debug.Log("find main construction");
                                     double factor = Vector3.Distance(tmp, baseVoxel);
@@ -1936,9 +1847,124 @@ public class FastMarching
                                     //var tmpVoxels = findSubVoxels(tmp_index, results, sz0, sz1, sz2);
                                     //if (tmpVoxels.Count < 10) continue;
                                     //target_set.Add(tmpIndex);
-                                    HashSet<Vector3> tmpVoxelSet = findSubVoxels(tmpIndex, gsdt, searchSet, results, sz0, sz1, sz2, bkg_thresh);
+                                    HashSet<Vector3> tmpVoxelSet = findSubVoxels(tmpIndex, gsdt, searchSet, target_set,results, sz0, sz1, sz2, bkg_thresh);
                                     if (voxelSet.Count < 3) continue;
-                                    SearchCluster(tmpVoxelSet, elem, baseIndex, root, vDim, oDim, searchSet, results, target_set, heap, elems, connection, bkg_thresh);
+                                    SearchCluster(tmpVoxelSet, elem, baseIndex, root, vDim, oDim, searchSet, results, addResults,target_set, heap, elems, connection, bkg_thresh);
+                                    is_break = true;
+                                }
+
+                            }
+                        }
+                    }
+                }
+            }
+            if (is_break) break;
+            searchTimes++;
+            parentOccupancyIndex = parent_oc[parentOccupancyIndex];
+            parentOccupancyPos = IndexToVector(parentOccupancyIndex, oDim);
+            parentBasePos.x = (int)(parentOccupancyPos.x / oDim.x * vDim.x);
+            parentBasePos.y = (int)(parentOccupancyPos.y / oDim.y * vDim.y);
+            parentBasePos.z = (int)(parentOccupancyPos.z / oDim.z * vDim.z);
+            createSphere(parentBasePos, vDim, Color.blue);
+            //Debug.Log(occupancyBaseVoxel);
+        }
+
+
+    }
+
+    private void SearchCluster(HashSet<Vector3> voxelSet, int sourceIndex, Marker root, Vector3Int vDim, Vector3Int oDim, HashSet<int> searchSet, HashSet<int> results, SortedSet<int> target_set, Heap<HeapElemX> heap, Dictionary<int, HeapElemX> elems, Dictionary<int, int> connection, int bkg_thresh)
+    {
+        int blockSize = vDim.x / oDim.x;
+        Vector3 baseVoxel = Vector3.zero;
+        Vector3 baseVoxel2 = Vector3.zero;
+        float minDistance = float.MaxValue;
+        float maxDistance = 0;
+        Vector3 average = Vector3.zero;
+        foreach (var voxel in voxelSet)
+        {
+            average += voxel;
+        }
+        average = average / voxelSet.Count;
+        Vector3 direction = GetDirection(average, vDim, oDim);
+        foreach (var voxel in voxelSet)
+        {
+            //createSphere(voxel, new Vector3Int(2048, 2048, 140), Color.green,0.005f);
+            float distance = Vector3.Distance(voxel, root.position);
+            //float distance = Vector3.Dot(voxel - average, direction);
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                baseVoxel = voxel;
+            }
+            if (distance > maxDistance)
+            {
+                maxDistance = distance;
+                baseVoxel2 = voxel;
+            }
+        }
+        int baseIndex = VectorToIndex(baseVoxel);
+        int baseIndex2 = VectorToIndex(baseVoxel2);
+        if (sourceIndex != -1)
+        {
+            connection[baseIndex2] = sourceIndex;
+            connection[sourceIndex] = baseIndex2;
+        }
+        //Debug.Log(baseVoxel);
+        Vector3 occupancyBaseVoxel = Vector3.zero;
+        createSphere(baseVoxel, vDim, Color.yellow);
+        occupancyBaseVoxel.x = baseVoxel.x / vDim.x * oDim.x;
+        occupancyBaseVoxel.y = baseVoxel.y / vDim.y * oDim.y;
+        occupancyBaseVoxel.z = baseVoxel.z / vDim.z * oDim.z;
+        //Debug.Log(occupancyBaseVoxel);
+        //createSphere(occupancyBaseVoxel, oDim, Color.blue);
+        int index_oc = ((int)occupancyBaseVoxel.x + (int)occupancyBaseVoxel.y * oDim.x + (int)occupancyBaseVoxel.z * oDim.y * oDim.x);
+
+        int parentOccupancyIndex = parent_oc[index_oc];
+        Vector3 parentOccupancyPos = IndexToVector(parentOccupancyIndex, oDim);
+        Vector3 parentBasePos = Vector3Int.zero;
+        parentBasePos.x = (int)(parentOccupancyPos.x / oDim.x * vDim.x);
+        parentBasePos.y = (int)(parentOccupancyPos.y / oDim.y * vDim.y);
+        parentBasePos.z = (int)(parentOccupancyPos.z / oDim.z * vDim.z);
+        createSphere(parentBasePos, vDim, Color.blue);
+        int searchTimes = 0;
+        bool is_break = false;
+        while (searchTimes < 20 && !is_break)
+        {
+            for (int i = -2; i < blockSize && !is_break; i++)
+            {
+                for (int j = -2; j < blockSize && !is_break; j++)
+                {
+                    for (int k = -2; k < blockSize && !is_break; k++)
+                    {
+                        Vector3 tmp = parentBasePos + new Vector3Int(i, j, k);
+                        if (tmp.x >= 0 && tmp.x < sz0 && tmp.y >= 0 && tmp.y < sz1 && tmp.z >= 0 && tmp.z < sz2)
+                        {
+                            int tmpIndex = VectorToIndex(tmp);
+                            if (gsdt[tmpIndex] >= bkg_thresh)
+                            {
+                                if (results.Contains(tmpIndex))
+                                {
+                                    Debug.Log("find main construction");
+                                    double factor = Vector3.Distance(tmp, baseVoxel);
+                                    float new_dist = (float)(phi[tmpIndex] + (GI(gsdt[tmpIndex]) + GI(gsdt[baseIndex])) * factor * 0.5);
+                                    phi[baseIndex] = new_dist;
+                                    HeapElemX elem = new HeapElemX(baseIndex, phi[baseIndex]);
+                                    elem.img_index = baseIndex;
+                                    elem.value = phi[baseIndex];
+                                    elem.prev_index = tmpIndex;
+                                    heap.insert(elem);
+                                    elems[baseIndex] = elem;
+                                    //state[maximum_index] = States.TRIAL;
+                                    is_break = true;
+                                }
+                                else if (!searchSet.Contains(tmpIndex))
+                                {
+                                    //var tmpVoxels = findSubVoxels(tmp_index, results, sz0, sz1, sz2);
+                                    //if (tmpVoxels.Count < 10) continue;
+                                    //target_set.Add(tmpIndex);
+                                    HashSet<Vector3> tmpVoxelSet = findSubVoxels(tmpIndex, gsdt, searchSet, target_set, results, sz0, sz1, sz2, bkg_thresh);
+                                    if (voxelSet.Count < 3) continue;
+                                    SearchCluster(tmpVoxelSet,baseIndex, root, vDim, oDim, searchSet, results, target_set, heap, elems, connection, bkg_thresh);
                                     is_break = true;
                                 }
 

@@ -58,7 +58,7 @@ public class IndexTipTrackScript : MonoBehaviour
     public int bkgThreshold;
     public Transform cubeTransform;
 
-
+    private VirutalFinger vf;
     private bool Finger_is_close()
     {
         if (HandJointUtils.TryGetJointPose(TrackedHandJoint.ThumbTip, Handedness.Right, out RightThumbTipPose) &&
@@ -125,6 +125,7 @@ public class IndexTipTrackScript : MonoBehaviour
         //RelationshipDict[0] = -1;
         IsContinuous = false;
         NumChosen = 0;
+        vf = new VirutalFinger();
         //soma = (SwcSoma)GameObject.Find("Soma").GetComponent<Chosen>().nodeB;
         //SomaPosition = soma.position;
         //Chosen chosen= GameObject.Find("Soma").GetComponent<Chosen>();
@@ -391,7 +392,8 @@ public class IndexTipTrackScript : MonoBehaviour
                         if (markerList.Count >= 2)
                         {
                             IsContinuous = false;
-                            var result = VirutalFinger.RefineSketchCurve(markerList, volume, bkgThreshold, 10);
+                            
+                            var result = vf.RefineSketchCurve(markerList, volume, bkgThreshold, 10);
                             Primitive.CreateBranch(result, cubeTransform, volume.width, volume.height, volume.depth);
                         }
                         IsContinuous = false;

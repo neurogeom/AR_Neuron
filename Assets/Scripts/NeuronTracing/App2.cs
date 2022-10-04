@@ -173,8 +173,8 @@ public class App2 : MonoBehaviour
 
     async public void TargetProcess(int target_index)
     {
-        await Task.Run(()=>TraceTarget(target_index));
-        //TraceTarget(target_index);
+        //await Task.Run(()=>TraceTarget(target_index));
+        TraceTarget(target_index);
         Primitive.CreateBranch(resampledBranch, cube.transform, vDim.x, vDim.y, vDim.z);
     }
 
@@ -189,9 +189,9 @@ public class App2 : MonoBehaviour
 
         Debug.Log("Pruning Done");
 
-        Debug.Log(filteredBranch.Count);
+        Debug.Log(filteredTree.Count);
         filteredTree = filteredTree.Union(filteredBranch).ToList();
-        Debug.Log(filteredBranch.Count);
+        Debug.Log(filteredTree.Count);
 
         resampledBranch = hp.Resample(filteredBranch, img1d, vDim.x, vDim.y, vDim.z);
 

@@ -65,7 +65,6 @@ public class HierarchyPrune
             if (inswc[i].parent != null && !swc_map.ContainsKey(inswc[i].parent))
             {
                 inswc[i].parent = null;
-                Debug.Log("fffff");
             }
             if (inswc[i].parent == null) continue;
             int parent_index = swc_map[inswc[i].parent];

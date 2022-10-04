@@ -2,20 +2,57 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using UnityEngine;
 
 public class VirutalFinger
 {
     enum States { ALIVE = -1, TRIAL = 0, FAR = 1, REPAIRED = 2 };
-    public static List<Marker> RefineSketchCurve(List<Marker> markerList, Texture3D volume, int bkg_thresh = 30, int radius = 5, int cnn_type = 2)
+
+    byte[] img;
+    float[] phi;
+    States[] state;
+    int[] parent;
+    float max_intensity;
+    float min_intensity;
+    int sz0, sz1, sz2;
+    int sz01;
+    int tol_sz;
+    Dictionary<int, HeapElemX> elems;
+    //for (int index= 0; index < tol_sz; index++)
+    //{
+    //    parent[index] = index;
+    //    phi[index] = float.MaxValue;
+    //    state[index] = States.FAR;
+    //    max_intensity = Math.Max(max_intensity, img[index]);
+    //    min_intensity = Math.Min(min_intensity, img[index]);
+    //}
+
+
+    public List<Marker> RefineSketchCurve(List<Marker> markerList, Texture3D volume, int bkg_thresh = 30, int radius = 5, int cnn_type = 2)
     {
-        int sz0 = volume.width, sz1 = volume.height, sz2 = volume.depth;
-        //int sz01 = sz0 * sz1;
-        //int tol_sz = sz01 * sz2;
-        //byte[] img = volume.GetPixelData<byte>(0).ToArray();
-        //float[] gsdt = new float[tol_sz];
-        //States[] state = new States[tol_sz];
+        sz0 = volume.width;
+        sz1 = volume.height;
+        sz2 = volume.depth;
+        sz01 = sz0 * sz1;
+        tol_sz = sz01 * sz2;
+        img = volume.GetPixelData<byte>(0).ToArray();
+        phi = new float[tol_sz];
+        state = new States[tol_sz];
+        parent = new int[tol_sz];
+        max_intensity = 255;
+        min_intensity = bkg_thresh;
+        elems = new Dictionary<int, HeapElemX>();
+        UnityEngine.Profiling.Profiler.BeginSample("inital");
+        Parallel.For(0, tol_sz, index =>
+        {
+            parent[index] = index;
+            phi[index] = float.MaxValue;
+            state[index] = States.FAR;
+        });
+        UnityEngine.Profiling.Profiler.EndSample();
+
         Debug.Log(markerList.Count);
         for(int i = 0; i < markerList.Count; i++)
         {
@@ -27,11 +64,13 @@ public class VirutalFinger
             Debug.Log(marker.position);
         }
         List<Marker> preList = null;
+
+
         for (int i = 1; i < markerList.Count; i++)
         {
             Marker preMarker = markerList[i - 1];
             Marker curMarker = markerList[i];
-            var curList = FastMarching_Linker(preMarker, curMarker, volume,bkg_thresh,radius,cnn_type);
+            var curList = FastMarching_Linker(preMarker, curMarker,bkg_thresh,radius,cnn_type);
             if (preList != null)
             {
                 curList[0].parent = preList.Last();
@@ -46,7 +85,7 @@ public class VirutalFinger
         preList = Smooth_Sketch_Curve(preList, 5);
         return preList;
     }
-    public static List<Marker> FastMarching_Linker(Marker preMarker, Marker curMarker, Texture3D volume, int bkg_thresh = 30, int radius = 5, int cnn_type = 2)
+    public List<Marker> FastMarching_Linker(Marker preMarker, Marker curMarker, int bkg_thresh = 30, int radius = 5, int cnn_type = 2)
     {
         List<Marker> outList = new List<Marker>();
 
@@ -54,33 +93,13 @@ public class VirutalFinger
         var subMarkers = Get_Disk_Markers(preMarker, direction,radius);
         var tarMarkers = Get_Disk_Markers(curMarker, direction,radius);
 
-        int sz0 = volume.width, sz1 = volume.height, sz2 = volume.depth;
-        int sz01 = sz0 * sz1;
-        int tol_sz = sz01 * sz2;
-        byte[] img = volume.GetPixelData<byte>(0).ToArray();
-        float[] phi = new float[tol_sz];
-        States[] state = new States[tol_sz];
-        int[] parent = new int[tol_sz];
-        float max_intensity = bkg_thresh;
-        float min_intensity = 255;
-        //for (int index= 0; index < tol_sz; index++)
-        //{
-        //    parent[index] = index;
-        //    phi[index] = float.MaxValue;
-        //    state[index] = States.FAR;
-        //    max_intensity = Math.Max(max_intensity, img[index]);
-        //    min_intensity = Math.Min(min_intensity, img[index]);
-        //}
 
         Parallel.For(0, tol_sz, index =>
         {
             parent[index] = index;
             phi[index] = float.MaxValue;
             state[index] = States.FAR;
-            max_intensity = Math.Max(max_intensity, img[index]);
-            min_intensity = Math.Min(min_intensity, img[index]);
         });
-
 
         max_intensity -= min_intensity;
         float li = 10;
@@ -91,11 +110,12 @@ public class VirutalFinger
             float ret = (float)Math.Exp(lamda * (1 - intensity / max_intensity) * (1 - intensity / max_intensity));
             return ret;
         }
-
+        
         Heap<HeapElemX> heap = new Heap<HeapElemX>();
-        Dictionary<int, HeapElemX> elems = new Dictionary<int, HeapElemX>();
+        
         HashSet<int> tarSet = new HashSet<int>();
         HashSet<int> subSet = new HashSet<int>();
+        UnityEngine.Profiling.Profiler.BeginSample("setMarkers");
         foreach (var marker in subMarkers)
         {
             int index = (int)marker.position.z * sz01 + (int)marker.position.y * sz0 + (int)marker.position.x;
@@ -114,6 +134,7 @@ public class VirutalFinger
             int index = (int)marker.position.z * sz01 + (int)marker.position.y * sz0 + (int)marker.position.x;
             tarSet.Add(index);
         }
+        UnityEngine.Profiling.Profiler.EndSample();
 
         int stop_index = -1;
         int count = 0;
@@ -183,6 +204,8 @@ public class VirutalFinger
             }  
         }
         Debug.Log(count);
+        UnityEngine.Profiling.Profiler.EndSample();
+        UnityEngine.Profiling.Profiler.BeginSample("idont know");
         {
             int index = stop_index;
             Debug.Log(index);
@@ -210,10 +233,11 @@ public class VirutalFinger
             outList.Reverse();
             Debug.Log(outList.Count+"markers linked");
         }
+        UnityEngine.Profiling.Profiler.EndSample();
         return outList;
     }
 
-    public static List<Marker> Get_Disk_Markers(Marker marker, Vector3 direction, int radius = 5)
+    public List<Marker> Get_Disk_Markers(Marker marker, Vector3 direction, int radius = 5)
     {
         Debug.Log("circle center" + marker.position);
         //createCircle(marker.position, direction, radius);
@@ -245,7 +269,7 @@ public class VirutalFinger
         return markers;
     }
 
-    public static void createCircle(Vector3 pos,Vector3 dir,float radius)
+    public void createCircle(Vector3 pos,Vector3 dir,float radius)
     {
         GameObject circle = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         var meshRenderer = circle.GetComponent<MeshRenderer>();
@@ -306,7 +330,7 @@ public class VirutalFinger
 
     }
 
-    private static List<Marker> ResampleMarkers(List<Marker> markerList, Vector3 scale)
+    private List<Marker> ResampleMarkers(List<Marker> markerList, Vector3 scale)
     {
         Debug.Log("start resample");
         List<Marker> result = new List<Marker>();
@@ -337,7 +361,7 @@ public class VirutalFinger
         return result;
     }
 
-    private static List<Marker> Smooth_Sketch_Curve(List<Marker> markers, int winsize = 5)
+    private List<Marker> Smooth_Sketch_Curve(List<Marker> markers, int winsize = 5)
     {
         if (winsize < 2) return null;
         int n = markers.Count;
