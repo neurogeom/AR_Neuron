@@ -37,7 +37,7 @@ public class EyeCollisionDetect : MonoBehaviour
 
     public Texture3D volume;
     // Start is called before the first frame update
-    List<int> targetIndexs = new List<int>();
+    HashSet<int> targetIndexs = new HashSet<int>();
 
     List<Vector3> test = new List<Vector3>();
 
@@ -100,7 +100,7 @@ public class EyeCollisionDetect : MonoBehaviour
                         scanCenter.z /= scanCount;
                         //addHitPoint(scanCenter);
                         getSeed(scanCenter, localGazeOrigin);
-                        app2.targets = targetIndexs.ToArray();
+                        //app2.targets = targetIndexs.ToArray();
 
                     }
                     //recordEyeData(gamma);
@@ -204,8 +204,11 @@ public class EyeCollisionDetect : MonoBehaviour
 
         if (max_intensity >= bkgThresh)
         {
+            Debug.Log(max_intensity);
+            Debug.Log(volumeData[max_index]);
             targetIndexs.Add(max_index);
             if (isRepairing == true) app2.TargetProcess(max_index);
+            else app2.targets.Add(max_index);
             GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             sphere.transform.localScale = new Vector3(.06f, .06f, .06f);
             sphere.transform.position = pos;

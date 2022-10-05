@@ -185,7 +185,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &85664456
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -202,7 +202,7 @@ MonoBehaviour:
   distanceCompute: {fileID: 7200000, guid: 3b49a701bba11ed4088e40f7ffa3be0c, type: 3}
   BlockSize: 4
   Dimensions: {x: 512, y: 512, z: 512}
-  Volume: {fileID: 0}
+  Volume: {fileID: 11700000, guid: df4c0883850bcfd459434c651012c813, type: 2}
   OccupancyMap: {fileID: 0}
   bkgThreshold: 10
 --- !u!4 &85664457
@@ -327,7 +327,7 @@ Transform:
   m_GameObject: {fileID: 96922833}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2.048, y: 2.048, z: 0.14}
+  m_LocalScale: {x: 2, y: 2, z: 0.14}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 532495645}
@@ -541,26 +541,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 544645920}
-  - component: {fileID: 544645919}
+  - component: {fileID: 544645921}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: readSwc
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &544645919
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 544645918}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8bc9d045f8b684d428ca0f06789dd368, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_IsActive: 0
 --- !u!4 &544645920
 Transform:
   m_ObjectHideFlags: 0
@@ -569,13 +557,25 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 544645918}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.8411486, y: 2.6486137, z: 16.213993}
+  m_LocalPosition: {x: 0, y: 0, z: 5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 16
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &544645921
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 544645918}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1aeee547e2cc26d4a8038b2e542d098c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &584151689
 GameObject:
   m_ObjectHideFlags: 0
@@ -767,7 +767,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &733781078
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -781,9 +781,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   path: 1_2_Ch2.tif_uint8.v3dpbd
-  volume: {fileID: 11700000, guid: b0c2239d0b14f8640bfc4db427bcf797, type: 2}
+  volume: {fileID: 11700000, guid: f1f01329e7516334f86f0199e6c3442d, type: 2}
   occupancy: {fileID: 0}
-  backgroundThreshold: 10
+  backgroundThreshold: 20
   blockSize: 4
   seed: {fileID: 0}
   cube: {fileID: 0}
@@ -1052,7 +1052,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 1}
+  m_BackGroundColor: {r: 1, g: 1, b: 1, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -1353,8 +1353,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1499450323}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.1852, y: 0.078, z: 0.051}
-  m_LocalScale: {x: 0.050000012, y: 0.05, z: 0.050000012}
+  m_LocalPosition: {x: -0.133, y: -0.211, z: 0.0485}
+  m_LocalScale: {x: 0.025, y: 0.025, z: 0.025}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 532495645}
@@ -1777,7 +1777,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1897691021
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1791,13 +1791,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isMsfm: 1
-  bkg_thresh: 10
-  volume: {fileID: 11700000, guid: 17e07913b87d0664984ed075d6d878da, type: 2}
+  bkg_thresh: 20
+  volume: {fileID: 11700000, guid: cd4578f5e8427c9419432371c26a7d59, type: 2}
   seed: {fileID: 1499450323}
   cube: {fileID: 96922833}
   PaintingBoard: {fileID: 532495643}
-  occupancy: {fileID: 11700000, guid: 4461f3f050ed191429df9abd6e9a9d14, type: 2}
-  targets: 
+  occupancy: {fileID: 11700000, guid: 76b37f93d9feb4d43aa979f5eb20699e, type: 2}
+  trace: 0
 --- !u!4 &1897691022
 Transform:
   m_ObjectHideFlags: 0
@@ -1888,7 +1888,7 @@ MonoBehaviour:
   paintingBoard: {fileID: 96922833}
   bkgThresh: 10
   isRepairing: 0
-  volume: {fileID: 11700000, guid: 17e07913b87d0664984ed075d6d878da, type: 2}
+  volume: {fileID: 11700000, guid: cd4578f5e8427c9419432371c26a7d59, type: 2}
   app2: {fileID: 1897691021}
 --- !u!4 &1948615979
 Transform:

@@ -10,19 +10,21 @@ using UnityEngine;
 public class TestReceiveInformation : MonoBehaviour
 {
 
-    private List<Vector3> swc_list;
+    private List<Vector3> swcList;
+    private List<float> radiusList;
+    private List<int> parentList;
     private Vector3 swc_average;
-    private Dictionary<int, int> swc_map;
-    float scale = 0.01f;
+    //private Dictionary<int, int> swc_map;
+    float scale = 1 / 2048.0f;
     private BoundsControl boundsControl;
 
     //Start is called before the first frame update
     void Start()
     {
         swc_average = new Vector3(0, 0, 0);
-        swc_list = new List<Vector3>();
-        swc_map = new Dictionary<int, int>();
-        string swc_path = "C:/Users/x/Desktop/v3d-testdata/neuron01.tif.swc";
+
+        //F:\gold166\p_checked6_mouse_RGC_uw\ho_091201c1
+        string swc_path = "F:/gold166/p_checked6_mouse_RGC_uw/sv_080926a/080926a.tif.v3dpbd.swc";
         if (!File.Exists(swc_path))
         {
             GameObject debugTip = GameObject.Find("DebugTip");
@@ -33,34 +35,36 @@ public class TestReceiveInformation : MonoBehaviour
             return;
         }
         string[] strs = File.ReadAllLines(swc_path);
-
+        int length = strs.Length;
+        swcList = new List<Vector3>();
+        radiusList = new List<float>();
+        parentList = new List<int>();
         for (int i = 0; i < strs.Length; ++i)
         {
             if (strs[i].StartsWith("#")) continue;
             string[] words = strs[i].Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             Vector3 swc = new Vector3(float.Parse(words[2]), float.Parse(words[3]), float.Parse(words[4]));
-            swc_list.Add(swc);
-
-            swc_map.Add(int.Parse(words[0]), int.Parse(words[6]));
+            swcList.Add(swc);
+            radiusList.Add(float.Parse(words[5]));
+            parentList.Add(int.Parse(words[6]) - 1);
             swc_average += swc;
 
         }
-        swc_average /= swc_list.Count;
+        swc_average /= swcList.Count;
         print("success");
 
 
         CreateNeuron();
-        CreateBoundingBox();
+        //CreateBoundingBox();
     }
 
-    private void CreateCylinder(Vector3 a, Vector3 b, float radius, GameObject parentObject)
+    private void CreateCylinder(Vector3 a, Vector3 b, float radiusA,float radiusB, GameObject parentObject)
     {
-        GameObject newObj = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        float length = Mathf.Sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z));
+        float length = Vector3.Distance(a, b);
+        GameObject newObj = Primitive.MyCylinder(radiusA, radiusB, length);
+
         Vector3 ab = (a - b).normalized;
-        Vector3 y_axis = new Vector3(0, 1, 0);
-        newObj.transform.localScale = new Vector3(radius, length / 2, radius);
-        newObj.transform.Rotate(Vector3.Cross(ab, y_axis), -Mathf.Acos(Vector3.Dot(ab, y_axis)) * 180 / Mathf.PI);
+        newObj.transform.up = ab;
         newObj.transform.position = (a + b) / 2;
 
         newObj.GetComponent<MeshRenderer>().material.color = Color.red;
@@ -71,7 +75,7 @@ public class TestReceiveInformation : MonoBehaviour
     {
         GameObject newObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         newObj.transform.position = a;
-        newObj.GetComponent<MeshRenderer>().material.color = Color.green;
+        newObj.GetComponent<MeshRenderer>().material.color = Color.red;
         newObj.transform.parent = parentObject.transform;
         newObj.transform.localScale = new Vector3(1, 1, 1) * radius;
         //GameObject.Find("ToolTip3").GetComponent<ToolTip>().ToolTipText = "sphere!";
@@ -80,12 +84,14 @@ public class TestReceiveInformation : MonoBehaviour
     private void CreateNeuron()
     {
         GameObject parentObject = this.gameObject;
-        for (int i = 0; i < swc_list.Count; ++i)
+        for (int i = 0; i < swcList.Count; ++i)
         {
-            CreateSphere((swc_list[i] - swc_average) * scale, scale, parentObject);
-            int pid = swc_map[i + 1];
-            if (pid == -1) continue;
-            CreateCylinder((swc_list[i] - swc_average) * scale, (swc_list[pid - 1] - swc_average) * scale, scale, parentObject);
+            Vector3 position = (swcList[i] - swc_average) * scale;
+            CreateSphere(position, radiusList[i]*scale, parentObject);
+            int pid = parentList[i];
+            if (pid == -2) continue;
+            Vector3 parentPostion = (swcList[pid] - swc_average) * scale;
+            CreateCylinder(position, parentPostion, radiusList[i]*scale, radiusList[pid]*scale, parentObject);
         }
         //GameObject.Find("ToolTip3").GetComponent<ToolTip>().ToolTipText = "neuron!";
     }

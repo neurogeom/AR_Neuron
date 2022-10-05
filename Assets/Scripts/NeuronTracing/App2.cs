@@ -35,7 +35,7 @@ public class App2 : MonoBehaviour
     [SerializeField] GameObject PaintingBoard;
     [SerializeField] Texture3D occupancy;
 
-    public int[] targets = { };
+    public HashSet<int> targets;
     byte[] img1d;
     byte[] occupancyData;
     Vector3Int dims;
@@ -53,8 +53,8 @@ public class App2 : MonoBehaviour
     List<Marker> resampledTree;
     List<Marker> filteredBranch;
     List<Marker> resampledBranch;
-
-    async void Start()
+    public bool trace = false;
+    private void Awake()
     {
         (dims.x, dims.y, dims.z) = (volume.width, volume.height, volume.depth);
         img1d = volume.GetPixelData<byte>(0).ToArray();
@@ -74,21 +74,34 @@ public class App2 : MonoBehaviour
         hp = new HierarchyPrune();
         vDim = new Vector3Int(volume.width, volume.height, volume.depth);
         oDim = new Vector3Int(occupancy.width, occupancy.height, occupancy.depth);
+        targets = new HashSet<int>();
+    }
 
-        await Task.Run(() =>
-        {
-            try
-            {
-                AllPathPruning2();
+    async void Start()
+    {
+        //await Task.Run(() =>
+        //{
+        //    try
+        //    {
+        //        AllPathPruning2();
 
-            }
-            catch (Exception ex) { Debug.LogError(ex); }
-        });
+        //    }
+        //    catch (Exception ex) { Debug.LogError(ex); }
+        //});
 
-        Primitive.CreateTree(resampledTree, cube.transform, vDim.x, vDim.y, vDim.z);
         //task.Start();
     }
 
+    private void Update()
+    {
+        if (trace == true)
+        {
+            AllPathPruning2();
+
+            Primitive.CreateTree(resampledTree, cube.transform, vDim.x, vDim.y, vDim.z);
+            trace = false;
+        }
+    }
 
     void AllPathPruning2()
     {
@@ -153,7 +166,7 @@ public class App2 : MonoBehaviour
             //Debug.Log("restruction done" + " time cost:" + time);
             Debug.Log(completeTree.Count);
 
-            filteredTree = hp.hierarchy_prune(completeTree, img1d, vDim.x, vDim.y, vDim.z, bkg_thresh, 10, true, SR_ratio);
+            filteredTree = hp.hierarchy_prune(completeTree, img1d, vDim.x, vDim.y, vDim.z, bkg_thresh, 15, true, SR_ratio);
             Debug.Log(filteredTree.Count);
 
             resampledTree = hp.Resample(filteredTree, img1d, vDim.x, vDim.y, vDim.z);
@@ -185,7 +198,7 @@ public class App2 : MonoBehaviour
 
         Debug.Log("Tracing Done");
 
-        filteredBranch = hp.hierarchy_prune_repair(completeBranch, img1d, vDim.x, vDim.y, vDim.z, bkg_thresh, 10, SR_ratio);
+        filteredBranch = hp.hierarchy_prune_repair(completeBranch, img1d, vDim.x, vDim.y, vDim.z, bkg_thresh, 15, SR_ratio);
 
         Debug.Log("Pruning Done");
 

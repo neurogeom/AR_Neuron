@@ -384,7 +384,8 @@ public class ReadTif : MonoBehaviour
     {
         TIFF tiff = new TIFF();
         //tiff.Decode("C:/Users/x/Desktop/v3d-testdata/neuron01.tif");
-        path = "F:/selectedNeuron/" + path;
+        //path = "F:/selectedNeuron/" + path;
+        path = "F:/gold166/p_checked6_mouse_RGC_uw/sv_080926a/080926a.tif.v3dpbd";
         tiff.DecodePBD(path);
        
         //string filePath = "C:/Users/x/Desktop/v3d-testdata/neuron01.tif";

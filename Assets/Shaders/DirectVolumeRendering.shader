@@ -34,8 +34,6 @@ Shader "Unlit/NewUnlitShader"
                 float3 position : TEXCOORD1;
             };
 
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
             float4 _VolumeScale;
             sampler3D _Volume;
             float4x4 _Rotation;

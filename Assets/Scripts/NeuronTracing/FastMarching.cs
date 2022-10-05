@@ -700,12 +700,15 @@ public class FastMarching
     //    return true;
     //}
 
-    public List<Marker> FastMarching_tree(Marker root, float[] img, int sz0, int sz1, int sz2, int o_width, int o_height, int o_depth, int[] targets,
+    public List<Marker> FastMarching_tree(Marker root, float[] img, int _sz0, int _sz1, int _sz2, int o_width, int o_height, int o_depth, HashSet<int> targets,
                                         int cnn_type = 3, int bkg_thresh = 30, bool is_break_accept = false)
     {
         double higher_thresh = 150;
+        sz0 = _sz0;
+        sz1 = _sz1;
+        sz2 = _sz2;
         int tol_sz = sz0 * sz1 * sz2;
-        int sz01 = sz0 * sz1;
+        sz01 = sz0 * sz1;
 
         gsdt = new float[tol_sz];
         phi = new float[tol_sz];
@@ -746,9 +749,8 @@ public class FastMarching
 
         SortedSet<int> target_set = new SortedSet<int>(new TargetComparer(sz0, sz1, sz2, root));
 
-        for (int i = 0; i < targets.Length; i++)
-        {
-            if (targets[i] != root_index) target_set.Add(targets[i]);
+        foreach(var i in targets){
+            if (i != root_index) target_set.Add(i);
         }
 
         Heap<HeapElemX> heap = new Heap<HeapElemX>();
@@ -759,6 +761,7 @@ public class FastMarching
         heap.insert(rootElem);
         elems[root_index] = rootElem;
         results = new HashSet<int>();
+        Debug.Log(target_set.Count);
         while (!heap.empty())
         {
             HeapElemX min_elem = heap.delete_min();
@@ -861,6 +864,7 @@ public class FastMarching
 
         HashSet<int> searchSet = new HashSet<int>();
         Dictionary<int, int> connection = new Dictionary<int, int>();
+        Debug.Log(target_set.Count);
         while (target_set.Count > 0)
         {
             float min_dis = float.MaxValue;
@@ -871,7 +875,7 @@ public class FastMarching
             //int target_index = target_set.First();
             target_set.Remove(target_index);
             HashSet<Vector3> voxelSet = findSubVoxels(target_index, gsdt, searchSet, target_set, results, sz0, sz1, sz2, bkg_thresh);
-
+            Debug.Log("voxel count:"+voxelSet.Count);
             if (voxelSet.Count < 3) continue;
 
             //trace back to trunk
@@ -879,7 +883,7 @@ public class FastMarching
 
             Debug.Log(heap.elems.Count);
             (Vector3 direction, Vector3 maximum_pos, Vector3 minimum_pos) = PCA(voxelSet, new Vector3Int(sz0, sz1, sz2), new Vector3Int(o_width, o_height, o_depth));
-
+             
             int serachLength = 25;
             SearchCluster(minimum_pos, -direction, serachLength, gsdt, searchSet, results, target_set, bkg_thresh);
             SearchCluster(maximum_pos, direction, serachLength, gsdt, searchSet, results, target_set, bkg_thresh);
@@ -1875,6 +1879,7 @@ public class FastMarching
     private void SearchCluster(HashSet<Vector3> voxelSet, int sourceIndex, Marker root, Vector3Int vDim, Vector3Int oDim, HashSet<int> searchSet, HashSet<int> results, SortedSet<int> target_set, Heap<HeapElemX> heap, Dictionary<int, HeapElemX> elems, Dictionary<int, int> connection, int bkg_thresh)
     {
         int blockSize = vDim.x / oDim.x;
+        Debug.Log(blockSize);
         Vector3 baseVoxel = Vector3.zero;
         Vector3 baseVoxel2 = Vector3.zero;
         float minDistance = float.MaxValue;
@@ -1928,7 +1933,8 @@ public class FastMarching
         createSphere(parentBasePos, vDim, Color.blue);
         int searchTimes = 0;
         bool is_break = false;
-        while (searchTimes < 20 && !is_break)
+        Debug.Log("searchset count:"+searchSet.Count);
+        while (searchTimes < 25 && !is_break)
         {
             for (int i = -2; i < blockSize && !is_break; i++)
             {
@@ -1942,6 +1948,7 @@ public class FastMarching
                             int tmpIndex = VectorToIndex(tmp);
                             if (gsdt[tmpIndex] >= bkg_thresh)
                             {
+                                Debug.Log("??????");
                                 if (results.Contains(tmpIndex))
                                 {
                                     Debug.Log("find main construction");
@@ -1959,15 +1966,16 @@ public class FastMarching
                                 }
                                 else if (!searchSet.Contains(tmpIndex))
                                 {
-                                    //var tmpVoxels = findSubVoxels(tmp_index, results, sz0, sz1, sz2);
+                                    //var tmpVoxels = findSubVoxels(tmp_index, results, sz0 , sz1, sz2);
                                     //if (tmpVoxels.Count < 10) continue;
                                     //target_set.Add(tmpIndex);
                                     HashSet<Vector3> tmpVoxelSet = findSubVoxels(tmpIndex, gsdt, searchSet, target_set, results, sz0, sz1, sz2, bkg_thresh);
                                     if (voxelSet.Count < 3) continue;
+                                    createSphere(IndexToVector(tmpIndex), vDim, Color.white,0.1f);
                                     SearchCluster(tmpVoxelSet,baseIndex, root, vDim, oDim, searchSet, results, target_set, heap, elems, connection, bkg_thresh);
                                     is_break = true;
                                 }
-
+                                 
                             }
                         }
                     }

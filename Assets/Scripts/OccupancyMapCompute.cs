@@ -18,6 +18,10 @@ public class OccupancyMapCompute : MonoBehaviour
     private Vector3Int Dmap;
     // Start is called before the first frame update
 
+    private void Start()
+    {
+        computeOccupancyMap();
+    }
     public Texture3D computeOccupancyMap()
     {
         Dimensions = new Vector3Int(Volume.width, Volume.height, Volume.depth);
