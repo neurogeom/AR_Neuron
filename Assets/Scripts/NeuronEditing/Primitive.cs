@@ -150,6 +150,7 @@ public class Primitive
 		var radius = marker.radius * Mathf.Max(scale.x, Mathf.Max(scale.y, scale.z));
 		GameObject newObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
 		newObj.GetComponent<MeshRenderer>().material.color = Color.red;
+
 		newObj.transform.localScale = new Vector3(1, 1, 1) * radius;
 
 		//newObj.transform.parent = parentTransform;

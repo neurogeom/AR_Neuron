@@ -39,7 +39,7 @@ public class App2 : MonoBehaviour
     byte[] img1d;
     byte[] occupancyData;
     Vector3Int dims;
-    Vector3 rootPos;
+    public Vector3 rootPos;
     List<Marker> filteredTree = new List<Marker>();
     Marker root;
     Marker msfm_root;
@@ -54,6 +54,8 @@ public class App2 : MonoBehaviour
     List<Marker> filteredBranch;
     List<Marker> resampledBranch;
     public bool trace = false;
+
+    public TestFIM fim; 
     private void Awake()
     {
         (dims.x, dims.y, dims.z) = (volume.width, volume.height, volume.depth);
@@ -65,7 +67,7 @@ public class App2 : MonoBehaviour
         Vector3 somaPos = seed.transform.localPosition;
         Vector3 v1 = new Vector3((somaPos - aabbmin).x / (aabbmax - aabbmin).x, (somaPos - aabbmin).y / (aabbmax - aabbmin).y, (somaPos - aabbmin).z / (aabbmax - aabbmin).z);
 
-        rootPos = new Vector3(v1.x * dims.x, v1.y * dims.y, v1.z * dims.z);
+        //rootPos = new Vector3(v1.x * dims.x, v1.y * dims.y, v1.z * dims.z);
         Debug.Log(rootPos);
 
         root = new Marker(rootPos);
@@ -96,10 +98,37 @@ public class App2 : MonoBehaviour
     {
         if (trace == true)
         {
-            AllPathPruning2();
+            trace = false;
+            float startTime = Time.realtimeSinceStartup;
+            float time = Time.realtimeSinceStartup;
+            Debug.Log(time);
+            //AllPathPruning2();
+
+            fim.PrepareDatas();
+            fim.FIMDT();
+            //float[] gsdt = fm.FastMarching_dt_parallel(img1d, vDim.x, vDim.y, vDim.z, bkg_thresh);
+
+            Debug.Log($"DT cost {Time.realtimeSinceStartup - time}");
+            time = Time.realtimeSinceStartup;
+            
+            //completeTree = fm.FastMarching_tree(root, gsdt, vDim.x, vDim.y, vDim.z, oDim.x, oDim.y, oDim.z, targets, 3, bkg_thresh, true);
+            completeTree = fim.FIMTree();
+            Debug.Log($"restruction cost {Time.realtimeSinceStartup - time}");
+            time = Time.realtimeSinceStartup;
+
+            Debug.Log(completeTree.Count);
+
+            filteredTree = hp.hierarchy_prune(completeTree, img1d, vDim.x, vDim.y, vDim.z, bkg_thresh, 15, true, SR_ratio);
+            Debug.Log(filteredTree.Count);
+
+            resampledTree = hp.Resample(filteredTree, img1d, vDim.x, vDim.y, vDim.z);
+            Debug.Log(resampledTree.Count);
+
+            Debug.Log($"filter and resample cost {Time.realtimeSinceStartup - time}");
+            time = Time.realtimeSinceStartup;
 
             Primitive.CreateTree(resampledTree, cube.transform, vDim.x, vDim.y, vDim.z);
-            trace = false;
+            Debug.Log($"create tree cost {Time.realtimeSinceStartup - time}");
         }
     }
 
@@ -116,6 +145,7 @@ public class App2 : MonoBehaviour
 
             gsdt = fm.FastMarching_dt_parallel(img1d, vDim.x,vDim.y,vDim.z, bkg_thresh);
 
+            return;
             if (isMsfm)
             {
                 msfm = fm.MSFM_dt_parallel(occupancyData, oDim.x,oDim.y,oDim.z, bkg_thresh);

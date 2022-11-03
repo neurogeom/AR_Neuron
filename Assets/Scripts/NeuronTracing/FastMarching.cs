@@ -14,7 +14,7 @@ public class FastMarching
     Texture3D SDF;
     double max_intensity;
     double min_intensity;
-    float[] gsdt;
+    float[] gwdt;
     float[] phi;
     int[] parent;
     int[] parent_oc;
@@ -710,12 +710,12 @@ public class FastMarching
         int tol_sz = sz0 * sz1 * sz2;
         sz01 = sz0 * sz1;
 
-        gsdt = new float[tol_sz];
+        gwdt = new float[tol_sz];
         phi = new float[tol_sz];
         parent = new int[tol_sz];
         state = new States[tol_sz];
 
-        img.CopyTo(gsdt, 0);
+        img.CopyTo(gwdt, 0);
 
         var outTree = new List<Marker>();
 
@@ -727,8 +727,8 @@ public class FastMarching
             phi[i] = float.MaxValue;
             parent[i] = i;  // each pixel point to itself at the         statements beginning
             state[i] = States.FAR;
-            max_intensity = Math.Max(max_intensity, gsdt[i]);
-            min_intensity = Math.Min(min_intensity, gsdt[i]);
+            max_intensity = Math.Max(max_intensity, gwdt[i]);
+            min_intensity = Math.Min(min_intensity, gwdt[i]);
         });
 
         //for (int i = 0; i < tol_sz; i++)
@@ -804,15 +804,15 @@ public class FastMarching
                         if (is_break_accept)
                         {
 
-                            if (gsdt[index] < bkg_thresh && gsdt[min_index] < bkg_thresh) continue;
+                            if (gwdt[index] < bkg_thresh && gwdt[min_index] < bkg_thresh) continue;
                         }
                         else
                         {
-                            if (gsdt[index] < bkg_thresh) continue;
+                            if (gwdt[index] < bkg_thresh) continue;
                         }
                         if (state[index] != States.ALIVE)
                         {
-                            float new_dist = (float)(phi[min_index] + (GI(gsdt[index]) + GI(gsdt[min_index])) * factor * 0.5);
+                            float new_dist = (float)(phi[min_index] + (GI(gwdt[index]) + GI(gwdt[min_index])) * factor * 0.5);
                             int prev_index = min_index;
 
                             if (state[index] == States.FAR)
@@ -874,7 +874,7 @@ public class FastMarching
 
             //int target_index = target_set.First();
             target_set.Remove(target_index);
-            HashSet<Vector3> voxelSet = findSubVoxels(target_index, gsdt, searchSet, target_set, results, sz0, sz1, sz2, bkg_thresh);
+            HashSet<Vector3> voxelSet = findSubVoxels(target_index, gwdt, searchSet, target_set, results, sz0, sz1, sz2, bkg_thresh);
             Debug.Log("voxel count:"+voxelSet.Count);
             if (voxelSet.Count < 3) continue;
 
@@ -885,8 +885,8 @@ public class FastMarching
             (Vector3 direction, Vector3 maximum_pos, Vector3 minimum_pos) = PCA(voxelSet, new Vector3Int(sz0, sz1, sz2), new Vector3Int(o_width, o_height, o_depth));
              
             int serachLength = 25;
-            SearchCluster(minimum_pos, -direction, serachLength, gsdt, searchSet, results, target_set, bkg_thresh);
-            SearchCluster(maximum_pos, direction, serachLength, gsdt, searchSet, results, target_set, bkg_thresh);
+            SearchCluster(minimum_pos, -direction, serachLength, gwdt, searchSet, results, target_set, bkg_thresh);
+            SearchCluster(maximum_pos, direction, serachLength, gwdt, searchSet, results, target_set, bkg_thresh);
             Debug.Log("target_set count befor heap:" + target_set.Count);
 
             while (!heap.empty())
@@ -931,15 +931,15 @@ public class FastMarching
                             if (is_break_accept)
                             {
 
-                                if (gsdt[index] < bkg_thresh && gsdt[min_index] < bkg_thresh) continue;
+                                if (gwdt[index] < bkg_thresh && gwdt[min_index] < bkg_thresh) continue;
                             }
                             else
                             {
-                                if (gsdt[index] < bkg_thresh) continue;
+                                if (gwdt[index] < bkg_thresh) continue;
                             }
                             if (state[index] != States.ALIVE)
                             {
-                                float new_dist = (float)(phi[min_index] + (GI(gsdt[index]) + GI(gsdt[min_index])) * factor * 0.5);
+                                float new_dist = (float)(phi[min_index] + (GI(gwdt[index]) + GI(gwdt[min_index])) * factor * 0.5);
                                 int prev_index = min_index;
 
                                 if (state[index] == States.FAR)
@@ -976,7 +976,7 @@ public class FastMarching
                     double factor = Vector3.Distance(new Vector3(i, j, k), new Vector3(w, h, d));
                     if (state[index] != States.ALIVE)
                     {
-                        float new_dist = (float)(phi[min_index] + (GI(gsdt[index]) + GI(gsdt[min_index])) * factor * 0.5);
+                        float new_dist = (float)(phi[min_index] + (GI(gwdt[index]) + GI(gwdt[min_index])) * factor * 0.5);
                         int prev_index = min_index;
 
                         if (state[index] == States.FAR)
@@ -1065,7 +1065,6 @@ public class FastMarching
     public bool MSFM_tree(Marker root, double[] img, int sz0, int sz1, int sz2,
                                 int cnn_type = 3, int bkg_thresh = 30, bool is_break_accept = false)
     {
-
         double higher_thresh = 150;
         int tol_sz = sz0 * sz1 * sz2;
         int sz01 = sz0 * sz1;
@@ -1287,7 +1286,7 @@ public class FastMarching
 
             //int target_index = target_set.First();
             target_set.Remove(target_index);
-            HashSet<Vector3> voxelSet = findSubVoxels(target_index, gsdt, searchSet, target_set, results, sz0, sz1, sz2, bkg_thresh);
+            HashSet<Vector3> voxelSet = findSubVoxels(target_index, gwdt, searchSet, target_set, results, sz0, sz1, sz2, bkg_thresh);
 
             if (voxelSet.Count < 3) continue;
 
@@ -1296,8 +1295,8 @@ public class FastMarching
 
             (Vector3 direction, Vector3 maximum_pos, Vector3 minimum_pos) = PCA(voxelSet, new Vector3Int(sz0, sz1, sz2), new Vector3Int(o_width, o_height, o_depth));
             int serachLength = 25;
-            SearchCluster(minimum_pos, -direction, serachLength, gsdt, searchSet, results, target_set, bkg_thresh);
-            SearchCluster(maximum_pos, direction, serachLength, gsdt, searchSet, results, target_set, bkg_thresh);
+            SearchCluster(minimum_pos, -direction, serachLength, gwdt, searchSet, results, target_set, bkg_thresh);
+            SearchCluster(maximum_pos, direction, serachLength, gwdt, searchSet, results, target_set, bkg_thresh);
             Debug.Log("target_set count befor heap:"+target_set.Count);
 
             if (branchIndex == -1)
@@ -1348,15 +1347,15 @@ public class FastMarching
                             if (is_break_accept)
                             {
 
-                                if (gsdt[index] < bkg_thresh && gsdt[min_index] < bkg_thresh) continue;
+                                if (gwdt[index] < bkg_thresh && gwdt[min_index] < bkg_thresh) continue;
                             }
                             else
                             {
-                                if (gsdt[index] < bkg_thresh) continue;
+                                if (gwdt[index] < bkg_thresh) continue;
                             }
                             if (state[index] != States.ALIVE)
                             {
-                                float new_dist = (float)(phi[min_index] + (GI(gsdt[index]) + GI(gsdt[min_index])) * factor * 0.5);
+                                float new_dist = (float)(phi[min_index] + (GI(gwdt[index]) + GI(gwdt[min_index])) * factor * 0.5);
                                 int prev_index = min_index;
 
                                 if (state[index] == States.FAR)
@@ -1393,7 +1392,7 @@ public class FastMarching
                     double factor = Vector3.Distance(new Vector3(i, j, k), new Vector3(w, h, d));
                     if (state[index] != States.ALIVE)
                     {
-                        float new_dist = (float)(phi[min_index] + (GI(gsdt[index]) + GI(gsdt[min_index])) * factor * 0.5);
+                        float new_dist = (float)(phi[min_index] + (GI(gwdt[index]) + GI(gwdt[min_index])) * factor * 0.5);
                         int prev_index = min_index;
 
                         if (state[index] == States.FAR)
@@ -1830,13 +1829,13 @@ public class FastMarching
                         if (tmp.x >= 0 && tmp.x < sz0 && tmp.y >= 0 && tmp.y < sz1 && tmp.z >= 0 && tmp.z < sz2)
                         {
                             int tmpIndex = VectorToIndex(tmp);
-                            if (gsdt[tmpIndex] >= bkg_thresh)
+                            if (gwdt[tmpIndex] >= bkg_thresh)
                             {
                                 if (elem.img_index == -1 && (results.Contains(tmpIndex)||addResults.Contains(tmpIndex)))
                                 {
                                     Debug.Log("find main construction");
                                     double factor = Vector3.Distance(tmp, baseVoxel);
-                                    float new_dist = (float)(phi[tmpIndex] + (GI(gsdt[tmpIndex]) + GI(gsdt[baseIndex])) * factor * 0.5);
+                                    float new_dist = (float)(phi[tmpIndex] + (GI(gwdt[tmpIndex]) + GI(gwdt[baseIndex])) * factor * 0.5);
                                     phi[baseIndex] = new_dist;
                                     elem.img_index = baseIndex;
                                     elem.value = phi[baseIndex];
@@ -1851,7 +1850,7 @@ public class FastMarching
                                     //var tmpVoxels = findSubVoxels(tmp_index, results, sz0, sz1, sz2);
                                     //if (tmpVoxels.Count < 10) continue;
                                     //target_set.Add(tmpIndex);
-                                    HashSet<Vector3> tmpVoxelSet = findSubVoxels(tmpIndex, gsdt, searchSet, target_set,results, sz0, sz1, sz2, bkg_thresh);
+                                    HashSet<Vector3> tmpVoxelSet = findSubVoxels(tmpIndex, gwdt, searchSet, target_set,results, sz0, sz1, sz2, bkg_thresh);
                                     if (voxelSet.Count < 3) continue;
                                     SearchCluster(tmpVoxelSet, elem, baseIndex, root, vDim, oDim, searchSet, results, addResults,target_set, heap, elems, connection, bkg_thresh);
                                     is_break = true;
@@ -1946,14 +1945,14 @@ public class FastMarching
                         if (tmp.x >= 0 && tmp.x < sz0 && tmp.y >= 0 && tmp.y < sz1 && tmp.z >= 0 && tmp.z < sz2)
                         {
                             int tmpIndex = VectorToIndex(tmp);
-                            if (gsdt[tmpIndex] >= bkg_thresh)
+                            if (gwdt[tmpIndex] >= bkg_thresh)
                             {
                                 Debug.Log("??????");
                                 if (results.Contains(tmpIndex))
                                 {
                                     Debug.Log("find main construction");
                                     double factor = Vector3.Distance(tmp, baseVoxel);
-                                    float new_dist = (float)(phi[tmpIndex] + (GI(gsdt[tmpIndex]) + GI(gsdt[baseIndex])) * factor * 0.5);
+                                    float new_dist = (float)(phi[tmpIndex] + (GI(gwdt[tmpIndex]) + GI(gwdt[baseIndex])) * factor * 0.5);
                                     phi[baseIndex] = new_dist;
                                     HeapElemX elem = new HeapElemX(baseIndex, phi[baseIndex]);
                                     elem.img_index = baseIndex;
@@ -1969,7 +1968,7 @@ public class FastMarching
                                     //var tmpVoxels = findSubVoxels(tmp_index, results, sz0 , sz1, sz2);
                                     //if (tmpVoxels.Count < 10) continue;
                                     //target_set.Add(tmpIndex);
-                                    HashSet<Vector3> tmpVoxelSet = findSubVoxels(tmpIndex, gsdt, searchSet, target_set, results, sz0, sz1, sz2, bkg_thresh);
+                                    HashSet<Vector3> tmpVoxelSet = findSubVoxels(tmpIndex, gwdt, searchSet, target_set, results, sz0, sz1, sz2, bkg_thresh);
                                     if (voxelSet.Count < 3) continue;
                                     createSphere(IndexToVector(tmpIndex), vDim, Color.white,0.1f);
                                     SearchCluster(tmpVoxelSet,baseIndex, root, vDim, oDim, searchSet, results, target_set, heap, elems, connection, bkg_thresh);
@@ -2061,7 +2060,7 @@ public class FastMarching
     {
         int x = (int)(index % dim.x);
         int y = (int)((index / dim.x) % dim.y);
-        int z = (int)((index / dim.x / dim.y) % dim.y);
+        int z = (int)((index / dim.x / dim.y) % dim.z);
         return new Vector3(x, y, z);
     }
 
